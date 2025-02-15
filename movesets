@@ -153,6 +153,49 @@ local Button = GoldenTab:CreateButton({
    Name = "Okarun",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/Kenjihin69/Kenjihin69/refs/heads/main/Hero%20hunter%20to%20okarun%20fr"))()
+      -- [[Sprint extension ]]
+
+local tool = Instance.new("Tool")
+    tool.Name = "Sprint"
+
+    tool.Parent = game.Players.LocalPlayer.Backpack
+    tool.RequiresHandle = false
+
+    local moving = false
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+    local runService = game:GetService("RunService")
+    local movementSpeed = 35
+
+    local animation = Instance.new("Animation")
+    animation.AnimationId = "rbxassetid://18897115785" 
+    local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator")
+    local animationTrack
+
+
+    local function moveForward()
+        while moving do
+            local forwardDirection = humanoidRootPart.CFrame.LookVector
+            humanoidRootPart.Velocity = forwardDirection * movementSpeed
+            runService.Stepped:Wait()
+        end
+    end
+
+    tool.Equipped:Connect(function()
+        moving = true
+        animationTrack = animator:LoadAnimation(animation)
+        animationTrack:Play()
+        moveForward()
+    end)
+
+    tool.Unequipped:Connect(function()
+        moving = false
+        if animationTrack then
+            animationTrack:Stop()
+        end
+    end)
    end,
 })
 
@@ -288,3 +331,103 @@ local Button = GoldenTab:CreateButton({
       loadstring(game:HttpGet("https://github.com/aggiealledge/obfuscated-scripts/raw/refs/heads/main/deku%20suiryu%20thingy.txt"))()
    end,
 })
+-- Only run if the player is in TSB
+local cloneref = cloneref or function(o) return o end
+COREGUI = cloneref(game:GetService("CoreGui"))
+Players = cloneref(game:GetService("Players"))
+
+if not game:IsLoaded() then
+    local notLoaded = Instance.new("Message")
+    notLoaded.Parent = COREGUI
+    notLoaded.Text = "Waiting for game to load..."
+    game.Loaded:Wait()
+    notLoaded:Destroy()
+end
+
+local allowedGames = {
+    [10449761463] = true, -- Normal servers and dual servers
+    [130818724007978] = true, -- KJ servers
+}
+
+if not allowedGames[game.PlaceId] then
+    return
+end
+
+local playersWithCounter = {}
+
+local function createDeathCounterBillboard(character)
+    local head = character:FindFirstChild("Head")
+    if not head then return end
+
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "DeathCounterGui"
+    billboardGui.Adornee = head
+    billboardGui.Size = UDim2.new(4, 0, 1, 0)
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0)
+    billboardGui.AlwaysOnTop = true
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1, 0, 1, 0)
+    frame.BackgroundTransparency = 1
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "Death Counter"
+    textLabel.TextColor3 = Color3.new(1, 0, 0)
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextStrokeTransparency = 0
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextScaled = true
+    textLabel.Parent = frame
+    frame.Parent = billboardGui
+    billboardGui.Parent = character
+end
+
+local function removeDeathCounterBillboard(character)
+    local billboardGui = character:FindFirstChild("DeathCounterGui")
+    if billboardGui then
+        billboardGui:Destroy()
+    end
+end
+
+local function onChildChanged(child, character)
+    local player = Players:GetPlayerFromCharacter(character)
+    if child.Name:lower() == "counter" and player then
+        if child.Parent == character then
+            if not playersWithCounter[player] then
+                playersWithCounter[player] = true
+                createDeathCounterBillboard(character)
+            end
+        else
+            if playersWithCounter[player] then
+                playersWithCounter[player] = nil
+                removeDeathCounterBillboard(character)
+            end
+        end
+    end
+end
+
+local function onCharacterAdded(character)
+    character.ChildAdded:Connect(function(child)
+        onChildChanged(child, character)
+    end)
+    character.ChildRemoved:Connect(function(child)
+        onChildChanged(child, character)
+    end)
+end
+
+local function setupPlayer(player)
+    player.CharacterAdded:Connect(onCharacterAdded)
+    if player.Character then
+        onCharacterAdded(player.Character)
+    end
+end
+
+-- Set up existing players
+for _, player in ipairs(Players:GetPlayers()) do
+    setupPlayer(player)
+end
+
+-- Handle new players joining
+Players.PlayerAdded:Connect(setupPlayer)
