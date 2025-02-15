@@ -4,7 +4,7 @@ local Window = Rayfield:CreateWindow({
    Name = "The Strongest Battlegrounds Moveset Library",
    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
    LoadingTitle = "TSB Moveset Library",
-   LoadingSubtitle = "By Acceleration, now loading...",
+   LoadingSubtitle = "By Kaonaba, now loading...",
    Theme = "AmberGlow", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 
    DisableRayfieldPrompts = true,
@@ -34,7 +34,7 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
-local GoldenTab = Window:CreateTab("Golden Head's Movesets", 4483362458) -- Title, Image
+local GoldenTab = Window:CreateTab("Kaonaba's Movesets", 4483362458) -- Title, Image
 local SaitamaSection = GoldenTab:CreateSection("Saitama Movesets")
 
 local Button = GoldenTab:CreateButton({
@@ -153,8 +153,7 @@ local Button = GoldenTab:CreateButton({
    Name = "Okarun",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/Kenjihin69/Kenjihin69/refs/heads/main/Hero%20hunter%20to%20okarun%20fr"))()
-      ```lua
-local tool = Instance.new("Tool")
+      local tool = Instance.new("Tool")
     tool.Name = "Sprint"
 
     tool.Parent = game.Players.LocalPlayer.Backpack
