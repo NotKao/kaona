@@ -153,8 +153,7 @@ local Button = GoldenTab:CreateButton({
    Name = "Okarun",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/Kenjihin69/Kenjihin69/refs/heads/main/Hero%20hunter%20to%20okarun%20fr"))()
-      -- [[Sprint extension ]]
-
+      ```lua
 local tool = Instance.new("Tool")
     tool.Name = "Sprint"
 
@@ -167,7 +166,7 @@ local tool = Instance.new("Tool")
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     local humanoid = character:WaitForChild("Humanoid")
     local runService = game:GetService("RunService")
-    local movementSpeed = 35
+    local movementSpeed = 125
 
     local animation = Instance.new("Animation")
     animation.AnimationId = "rbxassetid://18897115785" 
