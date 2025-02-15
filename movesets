@@ -26,11 +26,11 @@ local Window = Rayfield:CreateWindow({
    KeySettings = {
       Title = "The Strongest Battlegrounds Moveset Library",
       Subtitle = "Key System",
-      Note = "Join the GoldenHeads Discord server and look for the TSB Moveset Library thread in the share-scripts channel", -- Use this to tell the user how to get a key
-      FileName = "GoldenHead is the best12345678", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      Note = "Join the Kaonaba Discord server and look for the TSB Moveset Library thread in the share-scripts channel", -- Use this to tell the user how to get a key
+      FileName = "Kaonaba is the best12345678", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
       SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
       GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"TheGoldenKey1413"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+      Key = {"KaonabaKey321"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
    }
 })
 
@@ -45,9 +45,35 @@ local Button = GoldenTab:CreateButton({
 })
 
 local Button = GoldenTab:CreateButton({
+   Name = "Luffy",
+   Callback = function()
+      loadstring(game:HttpGet("https://github.com/aggiealledge/obfuscated-scripts/raw/refs/heads/main/Protected_7732857839120517.txt"))()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
    Name = "Boros",
    Callback = function()
       loadstring(game:HttpGet"https://paste.ee/r/XPIH5")()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
+   Name = "Trashcan man",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/yes1nt/yes/refs/heads/main/Trashcan%20Man", true))()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
+   Name = "Shinji",
+   Callback = function()
+      getgenv().speedtools = true --- set true if you want use this tool if you want to run
+      getgenv().speedpunch= false --- tp and normal Punch
+      getgenv().dance= true --- set true if you want to this dance song made by rebzyyx all I want is you 
+      getgenv().night= true -- set true if you want to day to night 
+
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Kenjihin69/Kenjihin69/refs/heads/main/Shinji%20tp%20exploit'))()
    end,
 })
 
@@ -251,5 +277,14 @@ local Button = GoldenTab:CreateButton({
    Name = "Sukuna",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/zyrask/Nexus-Base/main/atomic-blademaster%20to%20sukuna"))()
+   end,
+})
+
+local AtomicSection = GoldenTab:CreateSection("Martial Artist Movesets")
+
+local Button = GoldenTab:CreateButton({
+   Name = "Deku",
+   Callback = function()
+      loadstring(game:HttpGet("https://github.com/aggiealledge/obfuscated-scripts/raw/refs/heads/main/deku%20suiryu%20thingy.txt"))()
    end,
 })
