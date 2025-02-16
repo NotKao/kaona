@@ -38,7 +38,7 @@ local GoldenTab = Window:CreateTab("Kaonaba's Movesets", 4483362458) -- Title, I
 local SaitamaSection = GoldenTab:CreateSection("Saitama Movesets")
 
 local Button = GoldenTab:CreateButton({
-   Name = "Gojo",
+   Name = "Kyra Gojo",
    Callback = function()
       loadstring(game:HttpGet('https://raw.githubusercontent.com/NotKao/tsbmoveset/refs/heads/main/GOJOTSB'))()
    end,
@@ -311,13 +311,6 @@ local Button = GoldenTab:CreateButton({
 local SonicSection = GoldenTab:CreateSection("Sonic Movesets")
 
 local Button = GoldenTab:CreateButton({
-   Name = "Toji (Press the sonic to toji button in the Limitless Legacy menu)",
-   Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/Wi-sp/Limitless-legacy/refs/heads/main/GUI"))()
-   end,
-})
-
-local Button = GoldenTab:CreateButton({
    Name = "Voltra",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/Reapvitalized/TSB/refs/heads/main/VOLTA.lua"))()
@@ -357,7 +350,14 @@ local Button = GoldenTab:CreateButton({
    end,
 })
 
-local AtomicSection = GoldenTab:CreateSection("Martial Artist Movesets")
+local Button = GoldenTab:CreateButton({
+   Name = "Toji",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/NotKao/tsbmoveset/refs/heads/main/TOJI"))()
+   end,
+})
+
+local AtomicSection = GoldenTab:CreateSection("Suiryu Movesets")
 
 local Button = GoldenTab:CreateButton({
    Name = "Deku",
