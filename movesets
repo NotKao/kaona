@@ -365,6 +365,15 @@ local Button = GoldenTab:CreateButton({
       loadstring(game:HttpGet("https://github.com/aggiealledge/obfuscated-scripts/raw/refs/heads/main/deku%20suiryu%20thingy.txt"))()
    end,
 })
+
+local AtomicSection = GoldenTab:CreateSection("KJ Movesets")
+
+local Button = GoldenTab:CreateButton({
+   Name = "JK",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/NetlessMade/KJ-TO-JK/refs/heads/main/script.lua"))()
+   end,
+})
 -- Only run if the player is in TSB
 local cloneref = cloneref or function(o) return o end
 COREGUI = cloneref(game:GetService("CoreGui"))
