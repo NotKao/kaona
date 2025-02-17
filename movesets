@@ -267,13 +267,6 @@ local Button = GoldenTab:CreateButton({
 })
 
 local Button = GoldenTab:CreateButton({
-   Name = "Star Glitcher (Euphoria)",
-   Callback = function()
-      loadstring(game:HttpGet("https://paste.ee/r/mmQkO"))()
-   end,
-})
-
-local Button = GoldenTab:CreateButton({
    Name = "Diddy",
    Callback = function()
       loadstring(game:HttpGet("https://paste.ee/r/gKC8V"))()
