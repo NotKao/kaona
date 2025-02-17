@@ -357,7 +357,7 @@ local Button = GoldenTab:CreateButton({
    end,
 })
 
-local AtomicSection = GoldenTab:CreateSection("Suiryu Movesets")
+local SuiryuSection = GoldenTab:CreateSection("Suiryu Movesets")
 
 local Button = GoldenTab:CreateButton({
    Name = "Deku",
@@ -366,7 +366,7 @@ local Button = GoldenTab:CreateButton({
    end,
 })
 
-local AtomicSection = GoldenTab:CreateSection("KJ Movesets")
+local KJSection = GoldenTab:CreateSection("KJ Movesets")
 
 local Button = GoldenTab:CreateButton({
    Name = "JK",
