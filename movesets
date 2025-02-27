@@ -52,6 +52,13 @@ local Button = GoldenTab:CreateButton({
 })
 
 local Button = GoldenTab:CreateButton({
+   Name = "Sung Jin Woo",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/hamletirl/sunjingwoo/refs/heads/main/sunjingwoo"))()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
    Name = "Boros",
    Callback = function()
       loadstring(game:HttpGet"https://paste.ee/r/XPIH5")()
