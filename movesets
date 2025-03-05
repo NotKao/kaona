@@ -52,6 +52,13 @@ local Button = GoldenTab:CreateButton({
 })
 
 local Button = GoldenTab:CreateButton({
+   Name = "Manga Sukuna",
+   Callback = function()
+      loadstring(game:HttpGet("https://raw.githubusercontent.com/niki21233/undonethokunas/refs/heads/main/thokunasundone"))()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
    Name = "Sung Jin Woo",
    Callback = function()
       loadstring(game:HttpGet("https://raw.githubusercontent.com/hamletirl/sunjingwoo/refs/heads/main/sunjingwoo"))()
@@ -335,6 +342,13 @@ local Button = GoldenTab:CreateButton({
    Name = "Chainsaw Man",
    Callback = function()
       loadstring(game:HttpGet("https://gist.githubusercontent.com/GoldenHeads2/0fd8d36993c850f3fac89e5adf793076/raw/ab4f5a42bd0b2e24a32a46301d533ea849ca771c/gistfile1.txt"))()
+   end,
+})
+
+local Button = GoldenTab:CreateButton({
+   Name = "1x1x1x1",
+   Callback = function()
+      loadstring(game:HttpGet("https://gist.githubusercontent.com/GoldenHeads2/900e87ffc32f3c740930ccb106dd6abf/raw/358c5bf0f0a6aa25946718288dab006e3ae7e1d4/gistfile1.txt"))()
    end,
 })
 
