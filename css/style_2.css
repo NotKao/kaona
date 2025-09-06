@@ -6,8 +6,8 @@
 
 body {
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #0f0b00, #ffc295);
-    color: #ccc;
+    background: linear-gradient(135deg, #f0f4ff, #003d6a);
+    color: #333;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -18,11 +18,11 @@ body {
     position: relative;
     display: inline-block;
     text-align: center;
-    background: #000;
+    background: #fff;
     padding: 1rem;
     padding-bottom: 0;
     border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.85);
     max-width: 500px;
     width: 90%;
     animation: fadeIn 1s ease-in-out;
@@ -31,13 +31,13 @@ body {
 .container h1 {
     font-size: 1.8rem;
     margin-bottom: 1rem;
-    color: #d3c1af;
+    color: #2c3e50;
 }
 
 .container p {
     margin-bottom: 1.5rem;
     line-height: 1.5;
-    color: #aaa;
+    color: #555;
 }
 
 .logo-box {
@@ -49,15 +49,15 @@ body {
     height: auto;
     display: block;
     margin: 0 auto;
-    filter: drop-shadow(0 2px 5px rgba(255,255,255,0.8));
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.2));
 }
 
 #ppqr {
     width: 250px;
     height: auto;
-    border: 8px solid #070600;
+    border: 8px solid #f8f9ff;
     border-radius: 15px;
-    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.8);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s;
 }
 
