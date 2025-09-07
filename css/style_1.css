@@ -1,13 +1,13 @@
 :root {
-    --bg: #090804;
-    --surface: #000000;
-    --surface-soft: #0f0900;
+    --bg: #1c1b19;
+    --surface: #1a1a1a;
+    --surface-soft: #262018;
     --text: #e0dccf;
     --muted: #9f977d;
     --brand: #d3b900;
     --brand-2: #9c7c00;
     --radius: 16px;
-    --shadow: 0 6px 24px rgba(255,255,255,0.92);
+    --shadow: 0 6px 24px rgba(255,255,255,0.65);
 }
 
 * {
@@ -39,7 +39,7 @@ body {
     right: 0;
     z-index: 1000;
     background: linear-gradient(90deg, var(--brand) 0%, var(--brand-2) 100%);
-    color: #000;
+    color: #1a1a1a;
     box-shadow: var(--shadow);
 }
 
@@ -56,7 +56,7 @@ body {
     align-items: center;
     gap: 12px;
     text-decoration: none;
-    color: #000;
+    color: #1a1a1a;
     font-weight: 700;
     letter-spacing: .2px;
 }
@@ -80,7 +80,7 @@ body {
 #tb-nav > li > a,
 #tb-nav > li > button.dropdown-toggle {
     padding: 8px 12px;
-    color: #000;
+    color: #1a1a1a;
     text-decoration: none;
 }
 
@@ -105,7 +105,7 @@ body {
 }
 
 #tb-hamburger:focus-visible {
-    outline: 2px solid rgba(0,0,0,.35);
+    outline: 2px solid rgba(26,26,26,.35);
     outline-offset: 2px;
 }
 
@@ -114,7 +114,7 @@ body {
     display: block;
     width: 22px;
     height: 2px;
-    background: #000;
+    background: #1a1a1a;
     border-radius: 2px;
 }
 
@@ -125,7 +125,7 @@ body {
     left: 0;
     width: 22px;
     height: 2px;
-    background: #000;
+    background: #1a1a1a;
     border-radius: 2px;
 }
 
@@ -154,7 +154,7 @@ body {
     background: transparent;
     border: 0;
     font: inherit;
-    color: #000;
+    color: #1a1a1a;
     font-weight: 600;
     border-radius: 999px;
     cursor: pointer;
@@ -163,7 +163,7 @@ body {
 
 .dropdown-toggle:hover,
 .dropdown-toggle:focus-visible {
-    background: rgba(0,0,0,.85);
+    background: rgba(26,26,26,.85);
     transform: translateY(-2px);
 }
 
@@ -175,7 +175,7 @@ body {
     margin: 0;
     padding: 8px;
     min-width: 200px;
-    background: #000000;
+    background: #1a1a1a;
     color: var(--text);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -250,7 +250,7 @@ body {
     }
 
     .dropdown-menu a {
-        color: #000;
+        color: #1a1a1a;
         padding: 8px 10px;
         border-radius: 8px;
     }
@@ -328,7 +328,7 @@ p { margin: 0 0 10px 0; }
 .blog-card:hover,
 .blog-card:focus-within {
     transform: translateY(-4px);
-    box-shadow: 0 14px 30px rgba(255,255,255,.88);
+    box-shadow: 0 14px 30px rgba(255,255,255,.68);
 }
 
 .media-wrap {
@@ -336,7 +336,7 @@ p { margin: 0 0 10px 0; }
     aspect-ratio: 16/9;
     border-radius: 12px;
     overflow: hidden;
-    background: #161103;
+    background: #2a241c;
 }
 
 .blog-header {
@@ -386,7 +386,7 @@ p { margin: 0 0 10px 0; }
 
 .activity:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(255,255,255,.88);
+    box-shadow: 0 12px 28px rgba(255,255,255,.68);
 }
 
 @media (max-width: 900px) {
@@ -415,7 +415,7 @@ p { margin: 0 0 10px 0; }
     aspect-ratio: 4/3;
     border: 0;
     padding: 0;
-    background: #161103 center/cover no-repeat;
+    background: #2a241c center/cover no-repeat;
     cursor: pointer;
     border-radius: 14px;
     overflow: hidden;
@@ -427,7 +427,7 @@ p { margin: 0 0 10px 0; }
 .media-btn:hover,
 .media-btn:focus-visible {
     transform: translateY(-3px);
-    box-shadow: 0 10px 24px rgba(255,255,255,.86);
+    box-shadow: 0 10px 24px rgba(255,255,255,.68);
     outline: none;
 }
 
@@ -442,7 +442,7 @@ p { margin: 0 0 10px 0; }
     position: absolute;
     inset: auto auto 8px 8px;
     background: rgba(255,255,255,.35);
-    color: #000;
+    color: #1a1a1a;
     padding: 6px 10px;
     border-radius: 999px;
     font-size: 12px;
@@ -466,7 +466,7 @@ p { margin: 0 0 10px 0; }
 .card:hover,
 .card:focus-within {
     transform: translateY(-4px);
-    box-shadow: 0 14px 30px rgba(255,255,255,.88);
+    box-shadow: 0 14px 30px rgba(255,255,255,.68);
 }
 
 .card .meta { color: var(--muted); font-size: 14px; }
@@ -477,7 +477,7 @@ p { margin: 0 0 10px 0; }
     width: 100%;
     aspect-ratio: 16/10;
     margin-bottom: 10px;
-    background: #161103 center/cover no-repeat;
+    background: #2a241c center/cover no-repeat;
 }
 
 .embed-donate {
@@ -522,7 +522,7 @@ p { margin: 0 0 10px 0; }
     height: 40px;
     border: 0;
     border-radius: 50%;
-    background: #000;
+    background: #1a1a1a;
     color: #eee;
     font-size: 24px;
     cursor: pointer;
