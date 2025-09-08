@@ -1,7 +1,7 @@
 :root {
-    --bg: #1a1a1a;
-    --surface: #121212;
-    --surface-soft: #222222;
+    --bg: #313131;
+    --surface: #2b2b2b;
+    --surface-soft: #3f3f3f;
     --text: #e0dccf;
     --muted: #9f977d;
     --brand: #d3b900;
@@ -154,7 +154,7 @@ body {
     background: transparent;
     border: 0;
     font: inherit;
-    color: #000;
+    color: #262626;
     font-weight: 600;
     border-radius: 999px;
     cursor: pointer;
@@ -175,7 +175,7 @@ body {
     margin: 0;
     padding: 8px;
     min-width: 200px;
-    background: #000000;
+    background: #262626;
     color: var(--text);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
