@@ -18,7 +18,7 @@ body {
     position: relative;
     display: inline-block;
     text-align: center;
-    background: #ffffff; /* light card */
+    background: #000000; /* light card */
     padding: 1rem;
     padding-bottom: 0;
     border-radius: 20px;
