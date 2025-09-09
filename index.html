@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -6,6 +9,48 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+
+    <!-- Background Music -->
+    <audio id="backgroundAudio" autoplay loop>
+        <source src="Audio/allah.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
+    <!-- Mute/Unmute Button -->
+    <button id="audioControl" style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        background: #222;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        z-index: 1000;
+    ">Mute</button>
+
+    <script>
+        const audio = document.getElementById('backgroundAudio');
+        const controlButton = document.getElementById('audioControl');
+
+        // Mute/unmute functionality
+        controlButton.addEventListener('click', () => {
+            audio.muted = !audio.muted;
+            controlButton.textContent = audio.muted ? 'Unmute' : 'Mute';
+        });
+
+        // Attempt to autoplay on page load
+        window.addEventListener('load', () => {
+            audio.play().catch(() => console.log('Autoplay blocked, waiting for user interaction'));
+        });
+
+        // Play audio on first user interaction (click anywhere)
+        document.body.addEventListener('click', () => {
+            audio.play().catch(() => console.log('Autoplay blocked, still waiting for user interaction'));
+        }, { once: true });
+    </script>
+
     <header id="topbar">
         <nav class="container">
             <a class="brand" href="..">
