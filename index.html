@@ -1,325 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<!DOCTYPE html><html lang="en"><head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio</title>
-    <link rel="icon" href="images/KaoS.png">
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-
-    <!-- Background Music -->
-    <audio id="backgroundAudio" autoplay loop>
-        <source src="Audio/allah.mp3" type="audio/mp3">
-        Your browser does not support the audio element.
-    </audio>
-
-    <!-- Mute/Unmute Button -->
-    <button id="audioControl" style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 10px 15px;
-        border-radius: 8px;
-        background: #222;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        z-index: 1000;
-    ">Mute</button>
-
-    <script>
-        const audio = document.getElementById('backgroundAudio');
-        const controlButton = document.getElementById('audioControl');
-
-        // Mute/unmute functionality
-        controlButton.addEventListener('click', () => {
-            audio.muted = !audio.muted;
-            controlButton.textContent = audio.muted ? 'Unmute' : 'Mute';
-        });
-
-        // Attempt to autoplay on page load
-        window.addEventListener('load', () => {
-            audio.play().catch(() => console.log('Autoplay blocked, waiting for user interaction'));
-        });
-
-        // Play audio on first user interaction (click anywhere)
-        document.body.addEventListener('click', () => {
-            audio.play().catch(() => console.log('Autoplay blocked, still waiting for user interaction'));
-        }, { once: true });
-    </script>
-
-    <header id="topbar">
-        <nav class="container">
-            <a class="brand" href="..">
-                <img src="images/KaoS.png" alt="Logo" class="logo">
-                <span>KaoS</span>
-            </a>
-            <button id="tb-hamburger" aria-label="Menu" aria-expanded="false" aria-controls="tb-nav">
-                <span class="bar"></span>
-            </button>
-            <ul id="tb-nav">
-                <li><a href="..">หน้าหลัก</a></li>
-                <li><a href="#about">เกี่ยวกับแต๋ว</a></li>
-                <li><a href="#blog">แต๋ว</a></li>
-                <li><a href="#activities">แต๋ว#1</a></li>
-                <li><a href="#projects">แต๋ว#2</a></li>
-                <li><a href="#contribution">แต๋ว#3</a></li>
-                <li><a href="#certificates">แต๋ว#4</a></li>
-                <li><a href="#credits">แต๋วๆๆ</a></li>
-                <li><a href="#donation">แต๋วๆๆๆๆๆ</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main>
-        <section id="about" class="container section">
-            <h2>เกี่ยวกับแต๋ว!</h2>
-            <p>แต๋วๆๆๆๆ</p>
-        </section>
-        
-        <section id="blog" class="section alt">
-            <div class="container">
-                <h2>แต๋วๆๆๆๆ</h2>
-                <p>แต๋วๆๆ</p>
-                <embed src="blog.html" class="embed-blog">
-            </div>
-        </section>
-
-        <section id="activities" class="section alt">
-            <div class="container">
-                <h2>แต๋วๆๆๆ</h2>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/tangkwa1.jpg"></button>
-                        <button class="media-btn" data-src="img/tangkwa2.jpg"></button>
-                        <button class="media-btn" data-src="img/tangkwa3.jpg"></button>
-                        <button class="media-btn" data-src="img/tangkwa4.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#1: แต๋วๆๆๆๆ</h3>
-                        <p>แต๋วๆๆๆๆๆ</p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/khaohom1.jpg"></button>
-                        <button class="media-btn" data-src="img/khaohom2.jpg"></button>
-                        <button class="media-btn" data-src="img/khaohome.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#2: แต๋วๆๆๆๆๆ</h3>
-                        <p>
-                            แต๋วๆๆๆๆๆ
-                            <br>แต๋วๆๆๆๆๆ :D
-                        </p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/namo1.jpg"></button>
-                        <button class="media-btn" data-src="img/namo2.jpg"></button>
-                        <button class="media-btn" data-src="img/namo3.png"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#3: แต๋วๆๆๆๆๆ</h3>
-                        <p>
-                            แต๋ว
-                            <br>แต๋วๆ
-                        </p>
-                    </div>
-                </article>
-                
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/khunkhun1.jpg"></button>
-                        <button class="media-btn" data-src="img/khunkhun2.jpg"></button>
-                        <button class="media-btn" data-src="img/khunkhun3.jpg"></button>
-                        <button class="media-btn" data-src="img/khunkhun4.jpg"></button>
-                        <button class="media-btn" data-src="img/khunkhun5.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#4: แต๋วๆๆๆ</h3>
-                        <p>
-                            แต๋ววววว
-                        </p>
-                    </div>
-                </article>
-                
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/jikky1.jpg"></button>
-                        <button class="media-btn" data-src="img/santa1.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#5: แต๋วๆๆ</h3>
-                        <p>แต๋วๆๆๆ</p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/anya1.jpg"></button>
-                        <button class="media-btn" data-src="img/anya2.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#6: ซีเครทอิตาลี่</h3>
-                        <p>โคตรโหด</p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/ethen1.jpg"></button>
-                        <button class="media-btn" data-src="img/ethen2.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>ตัวไรไม่รู้ได้มาจากจีน</h3>
-                        <p>
-                            พี่เทิ่นเหยาหมิง
-                            <br>โหดจัด
-                        </p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="img/santa1.jpg"></button>
-                        <button class="media-btn" data-src="img/santa2.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#8: คนดีประจำห้อง (มั้ง)</h3>
-                        <p>เขาเรียกผมว่าไอตัวเหม็น56286363 เพลงได้มาจาก อาร์เซนอล</p>
-                    </div>
-                </article>
-
-                <article class="activity">
-                    <div class="media-strip">
-                        <button class="media-btn" data-src="vid/minnie1.mp4"></button>
-                        <button class="media-btn" data-src="img/guffy1.jpg"></button>
-                        <button class="media-btn" data-src="img/aomsin1.jpg"></button>
-                        <button class="media-btn" data-src="img/stamp1.jpg"></button>
-                    </div>
-                    <div class="activity-content">
-                        <h3>#9: รวมมิตร</h3>
-                        <p>
-                            ฉันโดนผึ้งต่อย
-                        </p>
-                    </div>
-                </article>
-            </div>
-        </section>
-
-        <section id="projects" class="section">
-            <div class="container">
-                <h2 id="projectsh2">รวมรูปโหดๆ 3 อันดับ</h2>
-                <div class="cards">
-                    <article class="card">
-                        <button class="media-btn cover" data-src="img/khunkhun4.jpg"></button>
-                        <h3>โหดๆ</h3>
-                        <h4>อู๊ดๆ</h4>
-                        <p class="meta">หลุดคอกมาสนามบอล<p>
-                        <p>บวม</p>
-                    </article>
-                    <article class="card">
-                        <button class="media-btn cover" data-src="img/namo1.jpg"></button>
-                        <h3>มดสี่ตา</h3>
-                        <h4>โหด</h4>
-                        <p class="meta">เหนียวหนึบ</p>
-                        <p>มดดดดดด!!!</p>
-                    </article>
-                    <article class="card">
-                        <button class="media-btn cover" data-src="img/ethen2.jpg"></button>
-                        <h3>โหดแต่ซิ่งเกิน</h3>
-                        <h4>แนนนนแนนแนนแนนแน่นนนนน</h4>
-                        <p class="meta">แง่นๆ</p>
-                        <p>เหยาหมิง</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section id="projects" class="section">
-            <div class="container">
-                <h2 id="projectsh2">ติดอันดับ 2</h2>
-                <div class="cards">
-                    <article class="card">
-                        <button class="media-btn cover" data-src="img/namo1.jpg"></button>
-                    </div>
-                    <article class="meta">
-                        <h3>มดเอ้ยยมาได้ไง</h3>
-                        <p>4ตาเช่นเคย</p>
-                <div class="cards">
-                    <article class="card">
-                        <button class="media-btn cover" data-src="img/khunkhun4.jpg"></button>
-                    </div>
-                    <article class="meta">
-                        <h3>โหดด</h3>
-                        <p>อู๊ดดด</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-        
-        <section id="certificates" class="section">
-            <div class="container">
-                <h2>อันดับ1!!!</h2>
-                <div class="certificates-grid">
-                    <article class="certificate-card">
-                        <button class="media-btn cover" data-src="img/khunkhun4.jpg"></button>
-                        <h3>คุณคุณสุดจัด</h3>
-                        <p class="meta">โหดที่สุดดอู๊ดๆๆๆ</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section id="donation" class="section alt">
-            <div class="container">
-                <embed src="donate.html" class="embed-donate">
-            </div>
-        </section>
-
-        <section id="credits" class="section">
-            <div class="container">
-                <h2>เครดิต & ความเกี่ยวข้อง</h2>
-                <div class="cards">
-                    <article class="card soft">
-                        <h3><a href="https://www.tesaban6.ac.th">CRMS6</a></h3>
-                        <p>ขอขอบคุณCRMS6ที่ให้มีรูปหลุดมา93826265.</p>
-                    </article>
-                    <article class="card soft">
-                        <h3><a href="https://kritchapat.online/p/">ริวจิน</a></h3>
-                        <p>ขอบคุณริวจินที่ช่วยคิดไอเดีย.</p>
-                    </article>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <p>© 2025 KaoS. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <div class="modal" aria-hidden="true">
-        <div class="modal-backdrop"></div>
-        <div class="modal-body" role="dialog" aria-modal="true" aria-label="Media viewer">
-            <button class="modal-close" aria-label="Close">×</button>
-            <img id="imgModal" alt="">
-            <video id="vidModal" playsinline="" controls=""></video>
-            <iframe id="ytModal" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen="" loading="lazy">
-            </iframe>
-        </div>
-    </div>
-
-    <script src="js/index.js"></script>
-
-
-</body></html>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
+           <p>แต๋วๆๆๆๆ</p>
