@@ -34,28 +34,29 @@
     <!-- UI Overlay ด้านบน -->
     <div id="ui-overlay" class="absolute top-0 left-0 w-full p-4 flex flex-col items-center justify-between pointer-events-none z-10">
         <!-- กล่องเป้าหมายคำศัพท์ไทย -->
-        <div class="bg-amber-950/85 border-2 border-amber-500/80 rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2">
+        <div class="bg-amber-950/90 border-2 border-amber-500 rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2 relative overflow-hidden">
             <span class="text-xs uppercase tracking-widest text-amber-300 font-bold block mb-1">🎯 คำแปลภาษาไทย (ฟันผลไม้ที่มีอักษรจีนตรงกัน)</span>
-            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-[0_2px_10px_rgba(245,158,11,0.6)]">
+            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-[0_2px_10px_rgba(245,158,11,0.8)] my-1">
                 ---
             </div>
-            <div id="target-pinyin" class="text-sm sm:text-base text-amber-200/90 font-medium italic">
-                ---
+            
+            <!-- แถบแสดงเวลาถอยหลังการเปลี่ยนคำศัพท์ -->
+            <div class="mt-2 w-full bg-stone-900/80 rounded-full h-3 border border-amber-600/50 p-0.5 relative overflow-hidden">
+                <div id="target-timer-bar" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-100 ease-linear w-full"></div>
             </div>
-            <!-- แสดงจำนวนรอบทบทวนคำศัพท์ชุดเดิม -->
-            <div id="set-progress" class="text-xs text-amber-300/80 mt-1 font-semibold">
-                ทบทวนคำศัพท์ในชุด: 1/3
+            <div id="target-timer-text" class="text-[11px] text-amber-200/90 mt-1 font-bold">
+                ⏱️ เปลี่ยนคำศัพท์ใน: 15s
             </div>
         </div>
 
         <!-- แถบสถานะ คะแนน และ ชีวิต (5 ชีวิต) -->
         <div class="w-full max-w-md flex justify-between items-center px-2">
-            <div class="bg-amber-950/80 px-4 py-2 rounded-xl border border-amber-700/60 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-sm">
+            <div class="bg-amber-950/90 px-4 py-2 rounded-xl border border-amber-700/60 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-sm">
                 <span>🏆 คะแนน:</span>
                 <span id="score-val" class="text-amber-400 text-2xl font-black">0</span>
             </div>
 
-            <div id="lives-container" class="flex gap-1 text-xl sm:text-2xl filter drop-shadow-md bg-black/40 px-3 py-1.5 rounded-xl backdrop-blur-sm">
+            <div id="lives-container" class="flex gap-1 text-xl sm:text-2xl filter drop-shadow-md bg-black/50 px-3 py-1.5 rounded-xl backdrop-blur-sm">
                 <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
             </div>
         </div>
@@ -111,9 +112,9 @@
             { cn: "钱", pinyin: "qián", th: "เงิน" }
         ];
 
-        // ชนิดผลไม้หลากสีสัน (8 ชนิด)
+        // ชนิดผลไม้หลากสีสัน
         const FRUIT_TYPES = [
-            { name: 'watermelon', bg: '#15803d', inner: '#ef4444', border: '#166534', pColor: '#ef4444' },
+            { name: 'watermelon', bg: '#15803d', inner: '#fca5a5', border: '#166534', pColor: '#ef4444' },
             { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },
             { name: 'apple', bg: '#dc2626', inner: '#fef3c7', border: '#991b1b', pColor: '#ef4444' },
             { name: 'strawberry', bg: '#e11d48', inner: '#fecdd3', border: '#9f1239', pColor: '#fb7185' },
@@ -209,48 +210,53 @@
         let lives = 5;
         let isGameOver = false;
         
-        // ระบบจำกัดการเปลี่ยนคำศัพท์ (วนใช้คำศัพท์ในชุดเดิม 3 คำ)
         let currentWordSet = [];
         let currentTarget = null;
         let currentSetIndex = 0;
+
+        // ระบบจับเวลาการเปลี่ยนคำศัพท์เป้าหมาย (15 วินาทีต่อคำ)
+        const TARGET_TIME_LIMIT = 15;
+        let wordTimer = TARGET_TIME_LIMIT;
+        let lastTimestamp = 0;
 
         let items = [];
         let fruitHalves = [];
         let particles = [];
         let slicePath = [];
         let isSlicing = false;
+
         let spawnTimer = 0;
-        let spawnInterval = 130;
+        let nextSpawnInterval = 60;
 
-        let pendingSpawns = [];
+        let targetSpawnCounter = 0;
 
-        // ตัวแปรป้องกันการเสียชีวิตซ้ำซ้อน
         let lastDamageTime = 0;
         const DAMAGE_COOLDOWN = 500;
 
-        // --- 4. คลาสสร้างวัตถุ (ผลไม้คำศัพท์ และ ระเบิด) ---
+        // --- 4. คลาสสร้างวัตถุ ---
         class Item {
-            constructor(wordObj = null, isBomb = false, spawnX = null) {
-                this.radius = Math.min(width, height) * 0.082;
-                if (this.radius < 50) this.radius = 50;
-                if (this.radius > 75) this.radius = 75;
+            constructor(wordObj = null, isBomb = false) {
+                this.radius = Math.min(width, height) * 0.095;
+                if (this.radius < 60) this.radius = 60;
+                if (this.radius > 85) this.radius = 85;
 
-                this.x = spawnX !== null ? spawnX : Math.random() * (width - 160) + 80;
+                this.x = Math.random() * (width - 180) + 90;
                 this.y = height + this.radius;
 
+                const speedBoost = Math.min(score * 0.08, 4.5);
                 const speedMult = height / 800;
 
                 const centerOffset = (this.x - width / 2) / (width / 2);
-                this.vx = -centerOffset * (Math.random() * 3 + 1.5) + (Math.random() - 0.5) * 3;
+                this.vx = -centerOffset * (Math.random() * 2.5 + 1) + (Math.random() - 0.5) * 2;
                 
-                this.vy = -(Math.random() * 4.5 + 12) * speedMult;
-                this.gravity = (Math.random() * 0.04 + 0.25) * speedMult;
+                this.vy = -(Math.random() * 3.5 + 11.5 + speedBoost) * speedMult;
+                this.gravity = (Math.random() * 0.03 + 0.22) * speedMult;
 
-                this.rotation = Math.random() * Math.PI * 2;
-                this.vRot = (Math.random() - 0.5) * 0.08;
+                this.rotation = (Math.random() - 0.5) * 0.3; 
+                this.vRot = (Math.random() - 0.5) * 0.03;
 
                 this.isBomb = isBomb;
-                this.wordObj = wordObj; // { cn, pinyin, th }
+                this.wordObj = wordObj;
                 this.fruitType = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
                 this.isSliced = false;
             }
@@ -305,33 +311,41 @@
                     ctx.stroke();
 
                     ctx.beginPath();
-                    ctx.arc(0, 0, this.radius * 0.84, 0, Math.PI * 2);
+                    ctx.arc(0, 0, this.radius * 0.86, 0, Math.PI * 2);
                     ctx.fillStyle = ft.inner;
                     ctx.fill();
 
                     ctx.beginPath();
-                    ctx.ellipse(0, -this.radius * 0.9, this.radius * 0.3, this.radius * 0.15, Math.PI / 4, 0, Math.PI * 2);
-                    ctx.fillStyle = '#22c55e';
+                    ctx.ellipse(0, -this.radius * 0.92, this.radius * 0.32, this.radius * 0.16, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#16a34a';
                     ctx.fill();
 
-                    ctx.fillStyle = '#334155';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * 0.72, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                    ctx.fill();
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#1e293b';
                     ctx.font = `bold ${this.radius * 0.28}px sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.32);
+                    ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.36);
 
                     ctx.fillStyle = '#0f172a';
-                    ctx.font = `bold ${this.radius * 0.55}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+                    ctx.font = `bold ${this.radius * 0.58}px "PingFang SC", "Microsoft YaHei", sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(this.wordObj.cn, 0, this.radius * 0.15);
+                    ctx.fillText(this.wordObj.cn, 0, this.radius * 0.12);
                 }
 
                 ctx.restore();
             }
         }
 
-        // --- 5. คลาสสำหรับผลไม้ที่ถูกฟันเป็น 2 ซีก ---
+        // --- 5. คลาสสำหรับผลไม้ซีก ---
         class FruitHalf {
             constructor(x, y, radius, fruitType, isLeft, sliceAngle) {
                 this.x = x;
@@ -390,7 +404,7 @@
             }
         }
 
-        // --- 6. คลาสสำหรับอนุภาคกระจาย (Particles) ---
+        // --- 6. คลาสสำหรับอนุภาคกระจาย ---
         class Particle {
             constructor(x, y, color) {
                 this.x = x;
@@ -419,7 +433,7 @@
             }
         }
 
-        // --- 7. วาดฉากหลังโรงฝึกนินจาไม้โบราณ ---
+        // --- 7. วาดฉากหลัง ---
         function drawBackground() {
             const grad = ctx.createLinearGradient(0, 0, 0, height);
             grad.addColorStop(0, '#29180e');
@@ -445,9 +459,8 @@
             ctx.fillRect(0, 0, width, height);
         }
 
-        // --- 8. ระบบสุ่มเป้าหมายคำศัพท์แบบจำกัด (หมุนวนในชุด 3 คำเดิม) ---
+        // --- 8. ระบบสุ่มและจัดการเป้าหมายคำศัพท์ ---
         function generateNewWordSet() {
-            // สุ่ม 3 คำศัพท์ใหม่มาจากคลัง
             const shuffled = [...vocabularyDB].sort(() => Math.random() - 0.5);
             currentWordSet = shuffled.slice(0, 3);
             currentSetIndex = 0;
@@ -457,7 +470,6 @@
         function advanceTarget() {
             currentSetIndex++;
             if (currentSetIndex >= currentWordSet.length) {
-                // ทบทวนครบ 3 คำแล้ว ค่อยเปลี่ยนชุดคำศัพท์ใหม่
                 generateNewWordSet();
             } else {
                 updateTargetUI();
@@ -467,11 +479,30 @@
         function updateTargetUI() {
             currentTarget = currentWordSet[currentSetIndex];
             document.getElementById('target-word').innerText = currentTarget.th;
-            document.getElementById('target-pinyin').innerText = `(${currentTarget.pinyin})`;
-            document.getElementById('set-progress').innerText = `ทบทวนคำศัพท์ในชุด: ${currentSetIndex + 1}/3`;
+            
+            // รีเซ็ตตัวจับเวลาถอยหลัง 15 วินาที
+            wordTimer = TARGET_TIME_LIMIT;
+            updateTimerUI();
         }
 
-        // --- 9. การรับฟันคำและเช็คการชน (Slice & Collision) ---
+        function updateTimerUI() {
+            const bar = document.getElementById('target-timer-bar');
+            const text = document.getElementById('target-timer-text');
+            
+            const pct = Math.max(0, (wordTimer / TARGET_TIME_LIMIT) * 100);
+            bar.style.width = `${pct}%`;
+            
+            const secondsLeft = Math.ceil(wordTimer);
+            text.innerText = `⏱️ เปลี่ยนคำศัพท์ใน: ${secondsLeft}s`;
+
+            if (pct < 30) {
+                bar.className = "bg-gradient-to-r from-red-600 to-amber-500 h-full rounded-full transition-all duration-100 ease-linear";
+            } else {
+                bar.className = "bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-100 ease-linear";
+            }
+        }
+
+        // --- 9. การรับฟันคำและเช็คการชน ---
         function checkSliceCollision(x1, y1, x2, y2) {
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i];
@@ -498,12 +529,7 @@
                             score += 10;
                             document.getElementById('score-val').innerText = score;
                             
-                            // ขยับเป้าหมาย (วนในชุดเดิมจนครบ 3 คำ)
                             advanceTarget();
-
-                            if (score % 50 === 0 && spawnInterval > 80) {
-                                spawnInterval -= 5;
-                            }
                         } else {
                             soundFX.playWrong();
                             loseLife("ฟันผิดคำศัพท์! ❌");
@@ -562,18 +588,40 @@
             }
         }
 
-        // --- 10. ลูปหลักของเกม (Game Loop) ---
-        function gameLoop() {
+        // --- 10. ลูปหลักของเกม ---
+        function gameLoop(timestamp) {
             if (isGameOver) return;
+
+            if (!lastTimestamp) lastTimestamp = timestamp;
+            const dt = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            if (dt && dt < 0.5) {
+                wordTimer -= dt;
+                if (wordTimer <= 0) {
+                    advanceTarget();
+                } else {
+                    updateTimerUI();
+                }
+            }
 
             drawBackground();
 
-            processPendingSpawns();
-
             spawnTimer++;
-            if (spawnTimer >= spawnInterval) {
+            if (spawnTimer >= nextSpawnInterval) {
                 spawnTimer = 0;
-                scheduleWave();
+                
+                const comboChance = Math.min(score * 0.005, 0.35);
+                if (score > 40 && Math.random() < comboChance) {
+                    spawnSingleItem();
+                    setTimeout(spawnSingleItem, 200);
+                } else {
+                    spawnSingleItem();
+                }
+
+                const minInterval = Math.max(25, 55 - Math.floor(score / 20) * 5);
+                const maxInterval = Math.max(50, 100 - Math.floor(score / 15) * 6);
+                nextSpawnInterval = Math.floor(Math.random() * (maxInterval - minInterval)) + minInterval;
             }
 
             for (let i = items.length - 1; i >= 0; i--) {
@@ -581,7 +629,6 @@
                 item.update();
                 item.draw();
 
-                // เมื่อคำศัพท์ตกขอบล่างไป ปรับให้ "ไม่เสียชีวิต" แล้วลบออกได้เลย
                 if (item.y - item.radius > height + 50) {
                     items.splice(i, 1);
                 }
@@ -608,52 +655,28 @@
             requestAnimationFrame(gameLoop);
         }
 
-        // วางแผนสร้างชุดคำศัพท์ขึ้นมา
-        function scheduleWave() {
-            const count = Math.floor(Math.random() * 3) + 2; // 2 - 4 ลูกต่อรอบ
-            const includeTarget = Math.random() < 0.75; 
-            let targetInserted = false;
+        // สุ่มปล่อยวัตถุ
+        function spawnSingleItem() {
+            const bombChance = Math.min(0.10 + (score * 0.0015), 0.22);
+            const isBomb = Math.random() < bombChance;
 
-            const zones = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
-            const zoneWidth = (width - 160) / 4;
+            if (isBomb) {
+                items.push(new Item(null, true));
+            } else {
+                targetSpawnCounter++;
+                let selectedWord;
 
-            for (let i = 0; i < count; i++) {
-                const zone = zones[i % 4];
-                const spawnX = 80 + zone * zoneWidth + Math.random() * (zoneWidth - 20);
-                
-                const delayFrames = Math.floor(Math.random() * 25) + i * 8;
+                const targetChance = Math.max(0.28, 0.45 - (score * 0.002));
 
-                const isBomb = Math.random() < 0.1; // ระเบิดประมาณ 10%
-
-                let selectedWord = null;
-                if (!isBomb) {
-                    if (includeTarget && !targetInserted) {
-                        selectedWord = currentTarget;
-                        targetInserted = true;
-                    } else {
-                        // สุ่มคำศัพท์อื่นเป็นตัวหลอก
-                        let wrongWords = vocabularyDB.filter(v => v.cn !== currentTarget.cn);
-                        selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
-                    }
+                if (Math.random() < targetChance || targetSpawnCounter >= 4) {
+                    selectedWord = currentTarget;
+                    targetSpawnCounter = 0;
+                } else {
+                    let wrongWords = vocabularyDB.filter(v => v.cn !== currentTarget.cn);
+                    selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
                 }
 
-                pendingSpawns.push({
-                    delay: delayFrames,
-                    wordObj: selectedWord,
-                    isBomb: isBomb,
-                    spawnX: spawnX
-                });
-            }
-        }
-
-        function processPendingSpawns() {
-            for (let i = pendingSpawns.length - 1; i >= 0; i--) {
-                const p = pendingSpawns[i];
-                p.delay--;
-                if (p.delay <= 0) {
-                    items.push(new Item(p.wordObj, p.isBomb, p.spawnX));
-                    pendingSpawns.splice(i, 1);
-                }
+                items.push(new Item(selectedWord, false));
             }
         }
 
@@ -682,7 +705,7 @@
             }
         }
 
-        // --- 11. การจับเหตุการณ์เมาส์และทัชสกรีน (Events) ---
+        // --- 11. การจับเหตุการณ์เมาส์และทัชสกรีน ---
         function handlePointerDown(e) {
             soundFX.init();
             isSlicing = true;
@@ -727,24 +750,25 @@
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, { passive: false });
         window.addEventListener('touchend', handlePointerUp);
 
-        // --- 12. ระบบควบคุมสถานะเกม (Game Control) ---
+        // --- 12. ระบบควบคุมสถานะเกม ---
         function startGame() {
             score = 0;
             lives = 5;
-            spawnInterval = 130;
             isGameOver = false;
             lastDamageTime = 0;
+            lastTimestamp = 0;
             items = [];
             fruitHalves = [];
             particles = [];
             slicePath = [];
-            pendingSpawns = [];
+            spawnTimer = 0;
+            nextSpawnInterval = 50;
+            targetSpawnCounter = 0;
 
             document.getElementById('score-val').innerText = '0';
             document.getElementById('game-over-modal').classList.add('hidden');
             updateLivesUI();
             
-            // สร้างคำศัพท์ 3 คำสำหรับหมุนวนชุดแรก
             generateNewWordSet();
             
             requestAnimationFrame(gameLoop);
