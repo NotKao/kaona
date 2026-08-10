@@ -2,178 +2,679 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chibi Vocab Quest - ทายคำศัพท์ภาษาจีน</title>
-    <!-- Tailwind CSS CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chinese Vocab Fruit Ninja - นินจาคำศัพท์จีน</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Mali:wght@500;700&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <style>
         body {
-            font-family: 'Kanit', sans-serif;
-            background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 50%, #feebc8 100%);
-            min-height: 100vh;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+            font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
+            background-color: #1a0f07;
         }
-        .font-chinese {
-            font-family: 'Noto Sans SC', sans-serif;
-        }
-        .font-cute {
-            font-family: 'Mali', cursive;
-        }
-        .bounce-gentle {
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        .shake {
-            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-        }
-        @keyframes shake {
-            10%, 90% { transform: translate3d(-1px, 0, 0); }
-            20%, 80% { transform: translate3d(2px, 0, 0); }
-            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-            40%, 60% { transform: translate3d(4px, 0, 0); }
-        }
-        .pulse-subtle {
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        canvas {
+            display: block;
         }
     </style>
 </head>
-<body class="flex flex-col items-center justify-between p-4 min-h-screen text-slate-800">
+<body class="w-screen h-screen flex flex-col justify-center items-center relative">
 
-    <!-- Header Section -->
-    <header class="w-full max-w-md flex justify-between items-center bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm mb-4 border border-rose-100">
-        <div class="flex items-center gap-2">
-            <span class="text-3xl">🐼</span>
-            <div>
-                <h1 class="font-cute font-bold text-lg text-rose-600 leading-tight">Chibi Vocab Quest</h1>
-                <p class="text-xs text-slate-500">ทายคำศัพท์ภาษาจีนสุดสนุก</p>
+    <!-- UI Overlay ด้านบน -->
+    <div id="ui-overlay" class="absolute top-0 left-0 w-full p-4 flex flex-col items-center justify-between pointer-events-none z-10">
+        <!-- กล่องเป้าหมายคำศัพท์ไทย -->
+        <div class="bg-amber-950/85 border-2 border-amber-500/80 rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2">
+            <span class="text-xs uppercase tracking-widest text-amber-300 font-bold block mb-1">🎯 คำแปลภาษาไทย (ฟันผลไม้ที่มีอักษรจีนตรงกัน)</span>
+            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-[0_2px_10px_rgba(245,158,11,0.6)]">
+                ---
             </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <button id="sound-btn" onclick="toggleSound()" class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-200 transition">
-                <i class="fa-solid fa-volume-high text-lg"></i>
-            </button>
-            <button onclick="showMenu()" class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition">
-                <i class="fa-solid fa-bars text-lg"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="w-full max-w-md flex-1 flex flex-col items-center justify-center relative">
-
-        <!-- SCREEN 1: MENU SCREEN -->
-        <div id="screen-menu" class="w-full bg-white rounded-3xl shadow-xl p-6 border-4 border-rose-200 flex flex-col items-center text-center my-auto transition-all">
-            <!-- Mascot Preview -->
-            <div class="relative mb-4">
-                <div class="w-28 h-28 bg-rose-100 rounded-full flex items-center justify-center border-4 border-rose-300 shadow-inner">
-                    <svg id="mascot-menu-svg" class="w-24 h-24 bounce-gentle" viewBox="0 0 100 100">
-                        <!-- Panda Mascot -->
-                        <circle cx="20" cy="25" r="14" fill="#2d3748" />
-                        <circle cx="80" cy="25" r="14" fill="#2d3748" />
-                        <circle cx="50" cy="50" r="35" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
-                        <ellipse cx="35" cy="48" rx="8" ry="12" fill="#2d3748" transform="rotate(-15 35 48)" />
-                        <ellipse cx="65" cy="48" rx="8" ry="12" fill="#2d3748" transform="rotate(15 65 48)" />
-                        <circle cx="36" cy="46" r="3" fill="#ffffff" />
-                        <circle cx="64" cy="46" r="3" fill="#ffffff" />
-                        <ellipse cx="50" cy="60" rx="5" ry="3" fill="#2d3748" />
-                        <path d="M 45 66 Q 50 72 55 66" fill="none" stroke="#2d3748" stroke-width="2" stroke-linecap="round" />
-                        <ellipse cx="28" cy="58" rx="5" ry="3" fill="#fbb6ce" opacity="0.6" />
-                        <ellipse cx="72" cy="58" rx="5" ry="3" fill="#fbb6ce" opacity="0.6" />
-                    </svg>
-                </div>
-                <span class="absolute -bottom-2 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full border border-yellow-500 shadow-sm">
-                    ✨ หมีน้อยพู่โป้
-                </span>
-            </div>
-
-            <h2 class="text-2xl font-bold text-slate-800 mb-1 font-cute">พร้อมลุยภาษาจีนหรือยัง?</h2>
-            <p class="text-xs text-slate-500 mb-6">เลือกหมวดหมู่และโหมดการเล่นเพื่อเริ่มสนุกได้เลย!</p>
-
-            <!-- Mode Selection -->
-            <div class="w-full mb-4">
-                <label class="block text-left text-xs font-bold text-slate-600 mb-1">🎮 โหมดการตอบ:</label>
-                <select id="game-mode" class="w-full bg-slate-50 border-2 border-slate-200 rounded-xl p-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:border-rose-400">
-                    <option value="cn-th">ตัวจีน ➔ คำแปลไทย</option>
-                    <option value="pinyin-th">พินอิน (Pinyin) ➔ คำแปลไทย</option>
-                    <option value="th-cn">คำแปลไทย ➔ ตัวจีน</option>
-                </select>
-            </div>
-
-            <!-- Category Selection -->
-            <div class="w-full mb-6">
-                <label class="block text-left text-xs font-bold text-slate-600 mb-1">📚 หมวดหมู่คำศัพท์:</label>
-                <div class="grid grid-cols-2 gap-2" id="category-selector">
-                    <!-- Categories rendered via JS -->
-                </div>
-            </div>
-
-            <button onclick="startGame()" class="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-rose-200 transform active:scale-95 transition flex items-center justify-center gap-2 text-lg">
-                <i class="fa-solid fa-play"></i> เริ่มเล่นเกม
-            </button>
-
-            <div class="mt-4 text-xs text-slate-400 flex items-center gap-1">
-                <i class="fa-solid fa-trophy text-amber-400"></i> คะแนนสูงสุด: <span id="high-score" class="font-bold text-slate-600">0</span>
+            <div id="target-pinyin" class="text-sm sm:text-base text-amber-200/90 font-medium italic">
+                ---
             </div>
         </div>
 
-        <!-- SCREEN 2: GAMEPLAY SCREEN -->
-        <div id="screen-game" class="w-full bg-white rounded-3xl shadow-xl p-5 border-4 border-rose-200 flex flex-col items-center hidden relative transition-all">
-            
-            <!-- Top Status Bar -->
-            <div class="w-full flex justify-between items-center mb-4 text-sm font-bold bg-rose-50/80 p-2.5 rounded-2xl border border-rose-100">
-                <div class="flex items-center gap-1.5 text-rose-600">
-                    <i class="fa-solid fa-heart text-rose-500"></i>
-                    <span id="lives-count">3</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-amber-600">
-                    <i class="fa-solid fa-star text-amber-500"></i>
-                    <span id="score-count">0</span>
-                </div>
-                <div class="flex items-center gap-1.5 text-indigo-600">
-                    <i class="fa-solid fa-fire text-indigo-500"></i>
-                    <span>Streak: <span id="streak-count">0</span></span>
-                </div>
+        <!-- แถบสถานะ คะแนน และ ชีวิต (5 ชีวิต) -->
+        <div class="w-full max-w-md flex justify-between items-center px-2">
+            <div class="bg-amber-950/80 px-4 py-2 rounded-xl border border-amber-700/60 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-sm">
+                <span>🏆 คะแนน:</span>
+                <span id="score-val" class="text-amber-400 text-2xl font-black">0</span>
             </div>
 
-            <!-- Mascot Character Dynamic Display -->
-            <div class="relative mb-3">
-                <div id="mascot-box" class="w-24 h-24 bg-gradient-to-b from-rose-50 to-pink-100 rounded-full flex items-center justify-center border-4 border-white shadow-md relative overflow-hidden">
-                    <!-- SVG Mascot Dynamic Faces -->
-                    <svg id="mascot-game-svg" class="w-20 h-20 transition-all duration-300" viewBox="0 0 100 100">
-                        <!-- Ears -->
-                        <circle cx="20" cy="25" r="14" fill="#2d3748" />
-                        <circle cx="80" cy="25" r="14" fill="#2d3748" />
-                        <!-- Head -->
-                        <circle cx="50" cy="50" r="35" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
-                        
-                        <!-- Eyes Base -->
-                        <ellipse cx="35" cy="48" rx="8" ry="12" fill="#2d3748" transform="rotate(-15 35 48)" />
-                        <ellipse cx="65" cy="48" rx="8" ry="12" fill="#2d3748" transform="rotate(15 65 48)" />
-                        
-                        <!-- Eye Pupil (Normal State) -->
-                        <g id="mascot-eyes-normal">
-                            <circle cx="36" cy="46" r="3" fill="#ffffff" />
-                            <circle cx="64" cy="46" r="3" fill="#ffffff" />
-                        </g>
+            <div id="lives-container" class="flex gap-1 text-xl sm:text-2xl filter drop-shadow-md bg-black/40 px-3 py-1.5 rounded-xl backdrop-blur-sm">
+                <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
+            </div>
+        </div>
+    </div>
 
-                        <!-- Eye Happy State (Hidden by default) -->
-                        <g id="mascot-eyes-happy" class="hidden">
-                            <path d="M 30 48 Q 35 40 40 48" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
-                            <path d="M 60 48 Q 65 40 70 48" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" />
-                        </g>
+    <!-- หน้าต่าง Game Over -->
+    <div id="game-over-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-20 flex flex-col justify-center items-center text-white hidden p-4">
+        <div class="bg-stone-900 border-2 border-red-500/80 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+            <h1 id="game-over-title" class="text-4xl font-extrabold text-red-500 mb-2">เกมจบลงแล้ว!</h1>
+            <p id="game-over-reason" class="text-stone-300 mb-6 text-sm">ชีวิตของคุณหมดลงแล้ว</p>
 
-                        <!-- Eye Sad State (Hidden by default) -->
-                        <g id="ma
+            <div class="bg-stone-800/90 rounded-2xl p-4 mb-6 border border-stone-700">
+                <div class="text-stone-400 text-sm">คะแนนรวมทั้งหมด</div>
+                <div id="final-score" class="text-5xl font-black text-amber-400 my-1">0</div>
+            </div>
+
+            <button id="restart-btn" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-xl text-lg shadow-lg transform active:scale-95 transition-all pointer-events-auto">
+                เล่นใหม่อีกครั้ง 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas สำหรับวาดเกม -->
+    <canvas id="gameCanvas" class="w-full h-full"></canvas>
+
+    <script>
+        // --- 1. คลังคำศัพท์ภาษาจีน-ไทย ---
+        const vocabularyDB = [
+            { cn: "苹果", pinyin: "píngguǒ", th: "แอปเปิ้ล" },
+            { cn: "香蕉", pinyin: "xiāngjiāo", th: "กล้วย" },
+            { cn: "猫", pinyin: "māo", th: "แมว" },
+            { cn: "狗", pinyin: "gǒu", th: "สุนัข" },
+            { cn: "水", pinyin: "shuǐ", th: "น้ำ" },
+            { cn: "火", pinyin: "huǒ", th: "ไฟ" },
+            { cn: "书", pinyin: "shū", th: "หนังสือ" },
+            { cn: "学校", pinyin: "xuéxiào", th: "โรงเรียน" },
+            { cn: "老师", pinyin: "lǎoshī", th: "ครู" },
+            { cn: "学生", pinyin: "xuésheng", th: "นักเรียน" },
+            { cn: "朋友", pinyin: "péngyou", th: "เพื่อน" },
+            { cn: "飞机", pinyin: "fēijī", th: "เครื่องบิน" },
+            { cn: "汽车", pinyin: "qìchē", th: "รถยนต์" },
+            { cn: "太阳", pinyin: "tàiyáng", th: "พระอาทิตย์" },
+            { cn: "月亮", pinyin: "yuèliang", th: "พระจันทร์" },
+            { cn: "牛奶", pinyin: "niúnǎi", th: "นมสด" },
+            { cn: "面包", pinyin: "miànbāo", th: "ขนมปัง" },
+            { cn: "中国", pinyin: "zhōngguó", th: "ประเทศจีน" },
+            { cn: "泰国", pinyin: "tàiguó", th: "ประเทศไทย" },
+            { cn: "爱", pinyin: "ài", th: "รัก" },
+            { cn: "开心", pinyin: "kāixīn", th: "มีความสุข" },
+            { cn: "医生", pinyin: "yīshēng", th: "หมอ" },
+            { cn: "手机", pinyin: "shǒujī", th: "โทรศัพท์มือถือ" },
+            { cn: "电脑", pinyin: "diànnǎo", th: "คอมพิวเตอร์" },
+            { cn: "钱", pinyin: "qián", th: "เงิน" }
+        ];
+
+        // ชนิดผลไม้หลากสีสัน (เพิ่มเป็น 8 ชนิด)
+        const FRUIT_TYPES = [
+            { name: 'watermelon', bg: '#15803d', inner: '#ef4444', border: '#166534', pColor: '#ef4444' }, // แตงโม (เขียว/แดง)
+            { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },     // ส้ม (ส้มสด)
+            { name: 'apple', bg: '#dc2626', inner: '#fef3c7', border: '#991b1b', pColor: '#ef4444' },      // แอปเปิ้ล (แดงเข้ม)
+            { name: 'strawberry', bg: '#e11d48', inner: '#fecdd3', border: '#9f1239', pColor: '#fb7185' }, // สตรอว์เบอร์รี (ชมพูแดง)
+            { name: 'lemon', bg: '#eab308', inner: '#fef9c3', border: '#a16207', pColor: '#facc15' },       // เลมอน (เหลือง)
+            { name: 'blueberry', bg: '#2563eb', inner: '#dbeafe', border: '#1e40af', pColor: '#60a5fa' },   // บลูเบอร์รี (น้ำเงิน)
+            { name: 'dragonfruit', bg: '#db2777', inner: '#f1f5f9', border: '#9d174d', pColor: '#f472b6' }, // แก้วมังกร (ชมพูม่วง/ขาว)
+            { name: 'kiwi', bg: '#65a30d', inner: '#ecfccb', border: '#3f6212', pColor: '#a3e635' }        // กีวี่ (เขียวมะนาว)
+        ];
+
+        // --- 2. ระบบ Web Audio API สำหรับเอฟเฟกต์เสียง ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playSlice() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+            playHit() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+            playBomb() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            }
+            playWrong() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(110, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+        }
+
+        const soundFX = new SoundFX();
+
+        // --- 3. การตั้งค่า Canvas และ ตัวแปรหลัก ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height;
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let score = 0;
+        let lives = 5; // 5 ชีวิต
+        let isGameOver = false;
+        let currentTarget = null;
+        let items = [];
+        let fruitHalves = [];
+        let particles = [];
+        let slicePath = [];
+        let isSlicing = false;
+        let spawnTimer = 0;
+        let spawnInterval = 85;
+
+        // --- 4. คลาสสร้างวัตถุ (ผลไม้คำศัพท์ และ ระเบิด) ---
+        class Item {
+            constructor(wordObj = null, isBomb = false) {
+                this.radius = Math.min(width, height) * 0.085;
+                if (this.radius < 52) this.radius = 52;
+                if (this.radius > 78) this.radius = 78;
+
+                this.x = Math.random() * (width - 120) + 60;
+                this.y = height + this.radius;
+
+                const speedMult = height / 800;
+                this.vx = (width / 2 - this.x) * (Math.random() * 0.007 + 0.003);
+                this.vy = -(Math.random() * 4 + 13.5) * speedMult;
+                this.gravity = 0.28 * speedMult;
+
+                this.rotation = Math.random() * Math.PI * 2;
+                this.vRot = (Math.random() - 0.5) * 0.06;
+
+                this.isBomb = isBomb;
+                this.wordObj = wordObj; // { cn, pinyin, th }
+                this.fruitType = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                this.isSliced = false;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.rotation += this.vRot;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                if (this.isBomb) {
+                    // วาดลูกระเบิด
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#1c1917';
+                    ctx.fill();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.stroke();
+
+                    // ชนวนระเบิด
+                    ctx.beginPath();
+                    ctx.moveTo(0, -this.radius);
+                    ctx.quadraticCurveTo(10, -this.radius - 15, 15, -this.radius - 20);
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = '#d97706';
+                    ctx.stroke();
+
+                    // ประกายไฟชนวน
+                    ctx.beginPath();
+                    ctx.arc(15, -this.radius - 20, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fill();
+
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = `bold ${this.radius * 0.85}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('💣', 0, 2);
+                } else {
+                    // วาดรูปทรงผลไม้
+                    const ft = this.fruitType;
+
+                    // เปลือกนอกผลไม้
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = ft.bg;
+                    ctx.fill();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = ft.border;
+                    ctx.stroke();
+
+                    // เนื้อในผลไม้ (Inner Circle)
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * 0.84, 0, Math.PI * 2);
+                    ctx.fillStyle = ft.inner;
+                    ctx.fill();
+
+                    // ใบไม้ติดขั้วผลไม้
+                    ctx.beginPath();
+                    ctx.ellipse(0, -this.radius * 0.9, this.radius * 0.3, this.radius * 0.15, Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#22c55e';
+                    ctx.fill();
+
+                    // วาดพินอิน (Pinyin) ไว้ด้านบนอักษรจีน
+                    ctx.fillStyle = '#334155';
+                    ctx.font = `bold ${this.radius * 0.28}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.32);
+
+                    // วาดตัวอักษรภาษาจีนด้านในผลไม้
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = `bold ${this.radius * 0.55}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.wordObj.cn, 0, this.radius * 0.15);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // --- 5. คลาสสำหรับผลไม้ที่ถูกฟันเป็น 2 ซีก ---
+        class FruitHalf {
+            constructor(x, y, radius, fruitType, isLeft, sliceAngle) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.fruitType = fruitType;
+                this.isLeft = isLeft;
+                this.rotation = sliceAngle;
+
+                const pushDir = isLeft ? -1 : 1;
+                this.vx = pushDir * (Math.random() * 4 + 3);
+                this.vy = -(Math.random() * 3 + 2);
+                this.vRot = pushDir * (Math.random() * 0.1 + 0.05);
+                this.gravity = 0.35;
+                this.alpha = 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.rotation += this.vRot;
+                this.alpha -= 0.015;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                const ft = this.fruitType;
+                ctx.beginPath();
+                if (this.isLeft) {
+                    ctx.arc(0, 0, this.radius, Math.PI * 0.5, Math.PI * 1.5);
+                } else {
+                    ctx.arc(0, 0, this.radius, Math.PI * 1.5, Math.PI * 0.5);
+                }
+                ctx.closePath();
+                ctx.fillStyle = ft.bg;
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = ft.border;
+                ctx.stroke();
+
+                ctx.beginPath();
+                if (this.isLeft) {
+                    ctx.arc(0, 0, this.radius * 0.8, Math.PI * 0.5, Math.PI * 1.5);
+                } else {
+                    ctx.arc(0, 0, this.radius * 0.8, Math.PI * 1.5, Math.PI * 0.5);
+                }
+                ctx.fillStyle = ft.inner;
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // --- 6. คลาสสำหรับอนุภาคกระจาย (Particles) ---
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = Math.random() * 5 + 2;
+                this.vx = (Math.random() - 0.5) * 14;
+                this.vy = (Math.random() - 0.5) * 14;
+                this.alpha = 1;
+                this.color = color;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.03;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- 7. วาดฉากหลังโรงฝึกนินจาไม้โบราณ (Dojo Background) ---
+        function drawBackground() {
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, '#29180e');
+            grad.addColorStop(0.5, '#452715');
+            grad.addColorStop(1, '#1c0d06');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#180a04';
+            ctx.lineWidth = 3;
+            const plankWidth = 80;
+            for (let x = 0; x < width; x += plankWidth) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+
+            const lightGrad = ctx.createRadialGradient(width / 2, height / 3, 50, width / 2, height / 3, width * 0.7);
+            lightGrad.addColorStop(0, 'rgba(251, 191, 36, 0.12)');
+            lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+            ctx.fillStyle = lightGrad;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        // --- 8. ระบบสุ่มเป้าหมายคำศัพท์ ---
+        function setNextTarget() {
+            const randomIndex = Math.floor(Math.random() * vocabularyDB.length);
+            currentTarget = vocabularyDB[randomIndex];
+            document.getElementById('target-word').innerText = currentTarget.th;
+            document.getElementById('target-pinyin').innerText = `(${currentTarget.pinyin})`;
+        }
+
+        // --- 9. การรับฟันคำและเช็คการชน (Slice & Collision) ---
+        function checkSliceCollision(x1, y1, x2, y2) {
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                if (item.isSliced) continue;
+
+                const dist = distToSegment({ x: item.x, y: item.y }, { x: x1, y: y1 }, { x: x2, y: y2 });
+
+                if (dist < item.radius) {
+                    item.isSliced = true;
+
+                    if (item.isBomb) {
+                        // ฟันโดนระเบิด: หัก 1 ชีวิต
+                        createParticles(item.x, item.y, '#ef4444');
+                        soundFX.playBomb();
+                        loseLife("คุณฟันโดนระเบิด! 💣");
+                    } else {
+                        // สภาพการตัดผลไม้เป็น 2 ซีก
+                        const angle = Math.atan2(y2 - y1, x2 - x1);
+                        fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, true, angle));
+                        fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, false, angle));
+
+                        createParticles(item.x, item.y, item.fruitType.pColor);
+
+                        if (item.wordObj.cn === currentTarget.cn) {
+                            // ฟันถูกคำ!
+                            soundFX.playHit();
+                            score += 10;
+                            document.getElementById('score-val').innerText = score;
+                            setNextTarget();
+
+                            if (score % 50 === 0 && spawnInterval > 40) {
+                                spawnInterval -= 7;
+                            }
+                        } else {
+                            // ฟันผิดคำ!
+                            soundFX.playWrong();
+                            loseLife("ฟันผิดคำศัพท์! ❌");
+                        }
+                    }
+
+                    items.splice(i, 1);
+                }
+            }
+        }
+
+        function distToSegment(p, v, w) {
+            const l2 = (w.x - v.x) ** 2 + (w.y - v.y) ** 2;
+            if (l2 === 0) return Math.hypot(p.x - v.x, p.y - v.y);
+            let t = ((p.x - v.x) * (w.x - v.x) + (p.y - v.y) * (w.y - v.y)) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
+        }
+
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 22; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function loseLife(reason = "ชีวิตของคุณหมดลงแล้ว! 💔") {
+            lives--;
+            updateLivesUI();
+            if (lives <= 0) {
+                gameOver(reason);
+            }
+        }
+
+        function updateLivesUI() {
+            const container = document.getElementById('lives-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const heart = document.createElement('span');
+                heart.innerText = i < lives ? '❤️' : '🖤';
+                container.appendChild(heart);
+            }
+        }
+
+        // --- 10. ลูปหลักของเกม (Game Loop) ---
+        function gameLoop() {
+            if (isGameOver) return;
+
+            drawBackground();
+
+            spawnTimer++;
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+                spawnItems();
+            }
+
+            for (let i = items.length - 1; i >= 0; i--) {
+                const item = items[i];
+                item.update();
+                item.draw();
+
+                if (item.y - item.radius > height + 50) {
+                    if (!item.isBomb && item.wordObj.cn === currentTarget.cn && !item.isSliced) {
+                        soundFX.playWrong();
+                        loseLife("ปล่อยคำศัพท์เป้าหมายหลุดไป!");
+                        setNextTarget();
+                    }
+                    items.splice(i, 1);
+                }
+            }
+
+            for (let i = fruitHalves.length - 1; i >= 0; i--) {
+                const fh = fruitHalves[i];
+                fh.update();
+                fh.draw();
+                if (fh.alpha <= 0 || fh.y > height + 100) {
+                    fruitHalves.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) particles.splice(i, 1);
+            }
+
+            drawSliceTrail();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnItems() {
+            const isBomb = Math.random() < 0.22;
+
+            if (isBomb) {
+                items.push(new Item(null, true));
+            } else {
+                let selectedWord;
+                if (Math.random() < 0.45 && currentTarget) {
+                    selectedWord = currentTarget;
+                } else {
+                    selectedWord = vocabularyDB[Math.floor(Math.random() * vocabularyDB.length)];
+                }
+                items.push(new Item(selectedWord, false));
+            }
+        }
+
+        function drawSliceTrail() {
+            if (slicePath.length < 2) return;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(slicePath[0].x, slicePath[0].y);
+
+            for (let i = 1; i < slicePath.length; i++) {
+                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            }
+
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = '#fef08a';
+            ctx.shadowColor = '#f59e0b';
+            ctx.shadowBlur = 15;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            ctx.restore();
+
+            if (slicePath.length > 8) {
+                slicePath.shift();
+            }
+        }
+
+        // --- 11. การจับเหตุการณ์เมาส์และทัชสกรีน (Events) ---
+        function handlePointerDown(e) {
+            soundFX.init();
+            isSlicing = true;
+            slicePath = [];
+            const pos = getPointerPos(e);
+            slicePath.push(pos);
+        }
+
+        function handlePointerMove(e) {
+            if (!isSlicing) return;
+            const pos = getPointerPos(e);
+            slicePath.push(pos);
+
+            if (slicePath.length >= 2) {
+                const p1 = slicePath[slicePath.length - 2];
+                const p2 = slicePath[slicePath.length - 1];
+                soundFX.playSlice();
+                checkSliceCollision(p1.x, p1.y, p2.x, p2.y);
+            }
+        }
+
+        function handlePointerUp() {
+            isSlicing = false;
+            slicePath = [];
+        }
+
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e); }, { passive: false });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, { passive: false });
+        window.addEventListener('touchend', handlePointerUp);
+
+        // --- 12. ระบบควบคุมสถานะเกม (Game Control) ---
+        function startGame() {
+            score = 0;
+            lives = 5;
+            spawnInterval = 85;
+            isGameOver = false;
+            items = [];
+            fruitHalves = [];
+            particles = [];
+            slicePath = [];
+
+            document.getElementById('score-val').innerText = '0';
+            document.getElementById('game-over-modal').classList.add('hidden');
+            updateLivesUI();
+            setNextTarget();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(reason) {
+            isGameOver = true;
+            document.getElementById('game-over-reason').innerText = reason;
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        startGame();
+    </script>
+</body>
+</html>
+
