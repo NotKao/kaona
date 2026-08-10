@@ -214,7 +214,6 @@
         let currentTarget = null;
         let currentSetIndex = 0;
 
-        // ระบบจับเวลาการเปลี่ยนคำศัพท์เป้าหมาย (15 วินาทีต่อคำ)
         const TARGET_TIME_LIMIT = 15;
         let wordTimer = TARGET_TIME_LIMIT;
         let lastTimestamp = 0;
@@ -226,8 +225,9 @@
         let isSlicing = false;
 
         let spawnTimer = 0;
-        let nextSpawnInterval = 60;
+        let nextSpawnInterval = 80; // ปรับช่วงเริ่มต้นให้เว้นระยะมากขึ้น
 
+        let lastSpawnX = null; // บันทึกตำแหน่งเกิดลูกล่าสุดเพื่อป้องกันการโผล่ติดกัน
         let targetSpawnCounter = 0;
 
         let lastDamageTime = 0;
@@ -235,21 +235,37 @@
 
         // --- 4. คลาสสร้างวัตถุ ---
         class Item {
-            constructor(wordObj = null, isBomb = false) {
+            constructor(wordObj = null, isBomb = false, forcedX = null) {
                 this.radius = Math.min(width, height) * 0.095;
                 if (this.radius < 60) this.radius = 60;
                 if (this.radius > 85) this.radius = 85;
 
-                this.x = Math.random() * (width - 180) + 90;
+                // กำหนดตำแหน่ง X ให้ห่างจากลูกก่อนหน้าอย่างน้อย 180px
+                if (forcedX !== null) {
+                    this.x = forcedX;
+                } else {
+                    let newX;
+                    const minDistance = Math.min(width * 0.3, 200);
+                    let attempts = 0;
+                    do {
+                        newX = Math.random() * (width - 200) + 100;
+                        attempts++;
+                    } while (lastSpawnX !== null && Math.abs(newX - lastSpawnX) < minDistance && attempts < 10);
+                    
+                    this.x = newX;
+                }
+                lastSpawnX = this.x;
+
                 this.y = height + this.radius;
 
-                const speedBoost = Math.min(score * 0.08, 4.5);
+                // ความเร็วส่งขึ้นเพิ่มขึ้นเล็กน้อยเมื่อคะแนนสูงขึ้น
+                const speedBoost = Math.min(score * 0.05, 3.0);
                 const speedMult = height / 800;
 
                 const centerOffset = (this.x - width / 2) / (width / 2);
-                this.vx = -centerOffset * (Math.random() * 2.5 + 1) + (Math.random() - 0.5) * 2;
+                this.vx = -centerOffset * (Math.random() * 2 + 0.8) + (Math.random() - 0.5) * 1.5;
                 
-                this.vy = -(Math.random() * 3.5 + 11.5 + speedBoost) * speedMult;
+                this.vy = -(Math.random() * 3 + 11.0 + speedBoost) * speedMult;
                 this.gravity = (Math.random() * 0.03 + 0.22) * speedMult;
 
                 this.rotation = (Math.random() - 0.5) * 0.3; 
@@ -480,7 +496,6 @@
             currentTarget = currentWordSet[currentSetIndex];
             document.getElementById('target-word').innerText = currentTarget.th;
             
-            // รีเซ็ตตัวจับเวลาถอยหลัง 15 วินาที
             wordTimer = TARGET_TIME_LIMIT;
             updateTimerUI();
         }
@@ -588,7 +603,7 @@
             }
         }
 
-        // --- 10. ลูปหลักของเกม ---
+        // --- 10. ลูปหลักของเกม (ปรับความถี่ให้เว้นระยะพอดี) ---
         function gameLoop(timestamp) {
             if (isGameOver) return;
 
@@ -607,20 +622,15 @@
 
             drawBackground();
 
+            // ปรับจังหวะสุ่มให้ความถี่อยู่ในช่วง 0.8s ถึง 1.8s ไม่ถี่เกินไป
             spawnTimer++;
             if (spawnTimer >= nextSpawnInterval) {
                 spawnTimer = 0;
-                
-                const comboChance = Math.min(score * 0.005, 0.35);
-                if (score > 40 && Math.random() < comboChance) {
-                    spawnSingleItem();
-                    setTimeout(spawnSingleItem, 200);
-                } else {
-                    spawnSingleItem();
-                }
+                spawnSingleItem();
 
-                const minInterval = Math.max(25, 55 - Math.floor(score / 20) * 5);
-                const maxInterval = Math.max(50, 100 - Math.floor(score / 15) * 6);
+                // ค่อยๆ ปรับกระชับเวลาขึ้นเล็กน้อยตามคะแนน
+                const minInterval = Math.max(45, 75 - Math.floor(score / 25) * 5);
+                const maxInterval = Math.max(85, 130 - Math.floor(score / 20) * 6);
                 nextSpawnInterval = Math.floor(Math.random() * (maxInterval - minInterval)) + minInterval;
             }
 
@@ -657,7 +667,7 @@
 
         // สุ่มปล่อยวัตถุ
         function spawnSingleItem() {
-            const bombChance = Math.min(0.10 + (score * 0.0015), 0.22);
+            const bombChance = Math.min(0.08 + (score * 0.001), 0.18);
             const isBomb = Math.random() < bombChance;
 
             if (isBomb) {
@@ -666,7 +676,7 @@
                 targetSpawnCounter++;
                 let selectedWord;
 
-                const targetChance = Math.max(0.28, 0.45 - (score * 0.002));
+                const targetChance = Math.max(0.32, 0.48 - (score * 0.002));
 
                 if (Math.random() < targetChance || targetSpawnCounter >= 4) {
                     selectedWord = currentTarget;
@@ -757,12 +767,13 @@
             isGameOver = false;
             lastDamageTime = 0;
             lastTimestamp = 0;
+            lastSpawnX = null;
             items = [];
             fruitHalves = [];
             particles = [];
             slicePath = [];
             spawnTimer = 0;
-            nextSpawnInterval = 50;
+            nextSpawnInterval = 70;
             targetSpawnCounter = 0;
 
             document.getElementById('score-val').innerText = '0';
