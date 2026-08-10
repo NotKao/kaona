@@ -42,6 +42,10 @@
             <div id="target-pinyin" class="text-sm sm:text-base text-amber-200/90 font-medium italic">
                 ---
             </div>
+            <!-- แสดงจำนวนรอบทบทวนคำศัพท์ชุดเดิม -->
+            <div id="set-progress" class="text-xs text-amber-300/80 mt-1 font-semibold">
+                ทบทวนคำศัพท์ในชุด: 1/3
+            </div>
         </div>
 
         <!-- แถบสถานะ คะแนน และ ชีวิต (5 ชีวิต) -->
@@ -107,7 +111,7 @@
             { cn: "钱", pinyin: "qián", th: "เงิน" }
         ];
 
-        // ชนิดผลไม้หลากสีสัน
+        // ชนิดผลไม้หลากสีสัน (8 ชนิด)
         const FRUIT_TYPES = [
             { name: 'watermelon', bg: '#15803d', inner: '#ef4444', border: '#166534', pColor: '#ef4444' },
             { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },
@@ -204,36 +208,46 @@
         let score = 0;
         let lives = 5;
         let isGameOver = false;
+        
+        // ระบบจำกัดการเปลี่ยนคำศัพท์ (วนใช้คำศัพท์ในชุดเดิม 3 คำ)
+        let currentWordSet = [];
         let currentTarget = null;
+        let currentSetIndex = 0;
+
         let items = [];
         let fruitHalves = [];
         let particles = [];
         let slicePath = [];
         let isSlicing = false;
         let spawnTimer = 0;
-        let spawnInterval = 85;
+        let spawnInterval = 130;
+
+        let pendingSpawns = [];
 
         // ตัวแปรป้องกันการเสียชีวิตซ้ำซ้อน
         let lastDamageTime = 0;
-        const DAMAGE_COOLDOWN = 500; // เวลาป้องกัน 0.5 วินาที
+        const DAMAGE_COOLDOWN = 500;
 
         // --- 4. คลาสสร้างวัตถุ (ผลไม้คำศัพท์ และ ระเบิด) ---
         class Item {
-            constructor(wordObj = null, isBomb = false) {
-                this.radius = Math.min(width, height) * 0.085;
-                if (this.radius < 52) this.radius = 52;
-                if (this.radius > 78) this.radius = 78;
+            constructor(wordObj = null, isBomb = false, spawnX = null) {
+                this.radius = Math.min(width, height) * 0.082;
+                if (this.radius < 50) this.radius = 50;
+                if (this.radius > 75) this.radius = 75;
 
-                this.x = Math.random() * (width - 120) + 60;
+                this.x = spawnX !== null ? spawnX : Math.random() * (width - 160) + 80;
                 this.y = height + this.radius;
 
                 const speedMult = height / 800;
-                this.vx = (width / 2 - this.x) * (Math.random() * 0.007 + 0.003);
-                this.vy = -(Math.random() * 4 + 13.5) * speedMult;
-                this.gravity = 0.28 * speedMult;
+
+                const centerOffset = (this.x - width / 2) / (width / 2);
+                this.vx = -centerOffset * (Math.random() * 3 + 1.5) + (Math.random() - 0.5) * 3;
+                
+                this.vy = -(Math.random() * 4.5 + 12) * speedMult;
+                this.gravity = (Math.random() * 0.04 + 0.25) * speedMult;
 
                 this.rotation = Math.random() * Math.PI * 2;
-                this.vRot = (Math.random() - 0.5) * 0.06;
+                this.vRot = (Math.random() - 0.5) * 0.08;
 
                 this.isBomb = isBomb;
                 this.wordObj = wordObj; // { cn, pinyin, th }
@@ -431,12 +445,30 @@
             ctx.fillRect(0, 0, width, height);
         }
 
-        // --- 8. ระบบสุ่มเป้าหมายคำศัพท์ ---
-        function setNextTarget() {
-            const randomIndex = Math.floor(Math.random() * vocabularyDB.length);
-            currentTarget = vocabularyDB[randomIndex];
+        // --- 8. ระบบสุ่มเป้าหมายคำศัพท์แบบจำกัด (หมุนวนในชุด 3 คำเดิม) ---
+        function generateNewWordSet() {
+            // สุ่ม 3 คำศัพท์ใหม่มาจากคลัง
+            const shuffled = [...vocabularyDB].sort(() => Math.random() - 0.5);
+            currentWordSet = shuffled.slice(0, 3);
+            currentSetIndex = 0;
+            updateTargetUI();
+        }
+
+        function advanceTarget() {
+            currentSetIndex++;
+            if (currentSetIndex >= currentWordSet.length) {
+                // ทบทวนครบ 3 คำแล้ว ค่อยเปลี่ยนชุดคำศัพท์ใหม่
+                generateNewWordSet();
+            } else {
+                updateTargetUI();
+            }
+        }
+
+        function updateTargetUI() {
+            currentTarget = currentWordSet[currentSetIndex];
             document.getElementById('target-word').innerText = currentTarget.th;
             document.getElementById('target-pinyin').innerText = `(${currentTarget.pinyin})`;
+            document.getElementById('set-progress').innerText = `ทบทวนคำศัพท์ในชุด: ${currentSetIndex + 1}/3`;
         }
 
         // --- 9. การรับฟันคำและเช็คการชน (Slice & Collision) ---
@@ -465,10 +497,12 @@
                             soundFX.playHit();
                             score += 10;
                             document.getElementById('score-val').innerText = score;
-                            setNextTarget();
+                            
+                            // ขยับเป้าหมาย (วนในชุดเดิมจนครบ 3 คำ)
+                            advanceTarget();
 
-                            if (score % 50 === 0 && spawnInterval > 40) {
-                                spawnInterval -= 7;
+                            if (score % 50 === 0 && spawnInterval > 80) {
+                                spawnInterval -= 5;
                             }
                         } else {
                             soundFX.playWrong();
@@ -495,11 +529,10 @@
             }
         }
 
-        // ระบบหักชีวิตพร้อมระบบ Cooldown ป้องกันการโดนหักซ้ำซ้อน
         function loseLife(reason = "ชีวิตของคุณหมดลงแล้ว! 💔") {
             const now = Date.now();
             if (now - lastDamageTime < DAMAGE_COOLDOWN) {
-                return; // ถ้ายังไม่พ้น Cooldown ให้ข้ามการหักชีวิต
+                return;
             }
             lastDamageTime = now;
 
@@ -515,7 +548,7 @@
         function triggerDamageFlash() {
             const flash = document.getElementById('damage-flash');
             flash.classList.remove('damage-overlay');
-            void flash.offsetWidth; // Trigger reflow
+            void flash.offsetWidth;
             flash.classList.add('damage-overlay');
         }
 
@@ -535,10 +568,12 @@
 
             drawBackground();
 
+            processPendingSpawns();
+
             spawnTimer++;
             if (spawnTimer >= spawnInterval) {
                 spawnTimer = 0;
-                spawnItems();
+                scheduleWave();
             }
 
             for (let i = items.length - 1; i >= 0; i--) {
@@ -546,12 +581,8 @@
                 item.update();
                 item.draw();
 
+                // เมื่อคำศัพท์ตกขอบล่างไป ปรับให้ "ไม่เสียชีวิต" แล้วลบออกได้เลย
                 if (item.y - item.radius > height + 50) {
-                    if (!item.isBomb && item.wordObj.cn === currentTarget.cn && !item.isSliced) {
-                        soundFX.playWrong();
-                        loseLife("ปล่อยคำศัพท์เป้าหมายหลุดไป!");
-                        setNextTarget();
-                    }
                     items.splice(i, 1);
                 }
             }
@@ -577,19 +608,52 @@
             requestAnimationFrame(gameLoop);
         }
 
-        function spawnItems() {
-            const isBomb = Math.random() < 0.22;
+        // วางแผนสร้างชุดคำศัพท์ขึ้นมา
+        function scheduleWave() {
+            const count = Math.floor(Math.random() * 3) + 2; // 2 - 4 ลูกต่อรอบ
+            const includeTarget = Math.random() < 0.75; 
+            let targetInserted = false;
 
-            if (isBomb) {
-                items.push(new Item(null, true));
-            } else {
-                let selectedWord;
-                if (Math.random() < 0.45 && currentTarget) {
-                    selectedWord = currentTarget;
-                } else {
-                    selectedWord = vocabularyDB[Math.floor(Math.random() * vocabularyDB.length)];
+            const zones = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+            const zoneWidth = (width - 160) / 4;
+
+            for (let i = 0; i < count; i++) {
+                const zone = zones[i % 4];
+                const spawnX = 80 + zone * zoneWidth + Math.random() * (zoneWidth - 20);
+                
+                const delayFrames = Math.floor(Math.random() * 25) + i * 8;
+
+                const isBomb = Math.random() < 0.1; // ระเบิดประมาณ 10%
+
+                let selectedWord = null;
+                if (!isBomb) {
+                    if (includeTarget && !targetInserted) {
+                        selectedWord = currentTarget;
+                        targetInserted = true;
+                    } else {
+                        // สุ่มคำศัพท์อื่นเป็นตัวหลอก
+                        let wrongWords = vocabularyDB.filter(v => v.cn !== currentTarget.cn);
+                        selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
+                    }
                 }
-                items.push(new Item(selectedWord, false));
+
+                pendingSpawns.push({
+                    delay: delayFrames,
+                    wordObj: selectedWord,
+                    isBomb: isBomb,
+                    spawnX: spawnX
+                });
+            }
+        }
+
+        function processPendingSpawns() {
+            for (let i = pendingSpawns.length - 1; i >= 0; i--) {
+                const p = pendingSpawns[i];
+                p.delay--;
+                if (p.delay <= 0) {
+                    items.push(new Item(p.wordObj, p.isBomb, p.spawnX));
+                    pendingSpawns.splice(i, 1);
+                }
             }
         }
 
@@ -667,18 +731,22 @@
         function startGame() {
             score = 0;
             lives = 5;
-            spawnInterval = 85;
+            spawnInterval = 130;
             isGameOver = false;
             lastDamageTime = 0;
             items = [];
             fruitHalves = [];
             particles = [];
             slicePath = [];
+            pendingSpawns = [];
 
             document.getElementById('score-val').innerText = '0';
             document.getElementById('game-over-modal').classList.add('hidden');
             updateLivesUI();
-            setNextTarget();
+            
+            // สร้างคำศัพท์ 3 คำสำหรับหมุนวนชุดแรก
+            generateNewWordSet();
+            
             requestAnimationFrame(gameLoop);
         }
 
