@@ -12,68 +12,71 @@
             -webkit-user-select: none;
             overflow: hidden;
             font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
-            background-color: #1a0f07;
+            background-color: #0b0604;
         }
         canvas {
             display: block;
         }
         @keyframes damageFlash {
-            0% { opacity: 0.6; }
+            0% { opacity: 0.8; }
             100% { opacity: 0; }
         }
         .damage-overlay {
             animation: damageFlash 0.4s ease-out forwards;
         }
+        .text-glow {
+            text-shadow: 0 0 10px rgba(217, 119, 6, 0.8), 0 0 20px rgba(180, 83, 9, 0.5);
+        }
     </style>
 </head>
-<body class="w-screen h-screen flex flex-col justify-center items-center relative">
+<body class="w-screen h-screen flex flex-col justify-center items-center relative select-none">
 
     <!-- เอฟเฟกต์หน้าจอกระพริบสีแดงเมื่อเสียชีวิต -->
-    <div id="damage-flash" class="absolute inset-0 bg-red-600/40 pointer-events-none z-30 opacity-0"></div>
+    <div id="damage-flash" class="absolute inset-0 bg-red-600/60 pointer-events-none z-30 opacity-0"></div>
 
     <!-- UI Overlay ด้านบน -->
     <div id="ui-overlay" class="absolute top-0 left-0 w-full p-4 flex flex-col items-center justify-between pointer-events-none z-10">
         <!-- กล่องเป้าหมายคำศัพท์ไทย -->
-        <div class="bg-amber-950/90 border-2 border-amber-500 rounded-2xl px-6 py-3 shadow-2xl backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2 relative overflow-hidden">
-            <span class="text-xs uppercase tracking-widest text-amber-300 font-bold block mb-1">🎯 คำแปลภาษาไทย (ฟันผลไม้ที่มีอักษรจีนตรงกัน)</span>
-            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-[0_2px_10px_rgba(245,158,11,0.8)] my-1">
+        <div class="bg-stone-900/90 border-2 border-amber-600/80 rounded-2xl px-6 py-3 shadow-[0_0_20px_rgba(180,83,9,0.3)] backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2 relative overflow-hidden">
+            <span class="text-xs uppercase tracking-widest text-amber-400 font-bold block mb-1">🎯 คำแปลภาษาไทย (ฟันผลไม้ที่มีอักษรจีนตรงกัน)</span>
+            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white text-glow my-1 tracking-wide">
                 ---
             </div>
             
             <!-- แถบแสดงเวลาถอยหลังการเปลี่ยนคำศัพท์ -->
-            <div class="mt-2 w-full bg-stone-900/80 rounded-full h-3 border border-amber-600/50 p-0.5 relative overflow-hidden">
-                <div id="target-timer-bar" class="bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-100 ease-linear w-full"></div>
+            <div class="mt-2 w-full bg-stone-950/90 rounded-full h-3 border border-amber-700/60 p-0.5 relative overflow-hidden shadow-inner">
+                <div id="target-timer-bar" class="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-300 h-full rounded-full transition-all duration-100 ease-linear w-full shadow-[0_0_8px_#d97706]"></div>
             </div>
-            <div id="target-timer-text" class="text-[11px] text-amber-200/90 mt-1 font-bold">
+            <div id="target-timer-text" class="text-[11px] text-amber-200/90 mt-1 font-bold tracking-wider">
                 ⏱️ เปลี่ยนคำศัพท์ใน: 15s
             </div>
         </div>
 
         <!-- แถบสถานะ คะแนน และ ชีวิต (5 ชีวิต) -->
         <div class="w-full max-w-md flex justify-between items-center px-2">
-            <div class="bg-amber-950/90 px-4 py-2 rounded-xl border border-amber-700/60 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-sm">
-                <span>🏆 คะแนน:</span>
-                <span id="score-val" class="text-amber-400 text-2xl font-black">0</span>
+            <div class="bg-stone-900/90 px-5 py-2.5 rounded-xl border border-amber-600/40 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-md">
+                <span class="text-amber-400">🏆 คะแนน:</span>
+                <span id="score-val" class="text-amber-400 text-3xl font-black text-glow">0</span>
             </div>
 
-            <div id="lives-container" class="flex gap-1 text-xl sm:text-2xl filter drop-shadow-md bg-black/50 px-3 py-1.5 rounded-xl backdrop-blur-sm">
+            <div id="lives-container" class="flex gap-1.5 text-xl sm:text-2xl filter drop-shadow-[0_0_8px_rgba(220,38,38,0.7)] bg-stone-900/80 px-4 py-2 rounded-xl backdrop-blur-md border border-stone-800">
                 <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
             </div>
         </div>
     </div>
 
     <!-- หน้าต่าง Game Over -->
-    <div id="game-over-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-20 flex flex-col justify-center items-center text-white hidden p-4">
-        <div class="bg-stone-900 border-2 border-red-500/80 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
-            <h1 id="game-over-title" class="text-4xl font-extrabold text-red-500 mb-2">เกมจบลงแล้ว!</h1>
-            <p id="game-over-reason" class="text-stone-300 mb-6 text-sm">ชีวิตของคุณหมดลงแล้ว</p>
+    <div id="game-over-modal" class="absolute inset-0 bg-black/92 backdrop-blur-xl z-20 flex flex-col justify-center items-center text-white hidden p-4">
+        <div class="bg-stone-900 border-2 border-red-600/80 rounded-3xl p-8 max-w-sm w-full text-center shadow-[0_0_40px_rgba(220,38,38,0.4)] relative overflow-hidden">
+            <h1 id="game-over-title" class="text-4xl font-black text-red-500 mb-2 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] tracking-wider">GAME OVER</h1>
+            <p id="game-over-reason" class="text-stone-300 mb-6 text-sm font-medium">ชีวิตของคุณหมดลงแล้ว</p>
 
-            <div class="bg-stone-800/90 rounded-2xl p-4 mb-6 border border-stone-700">
-                <div class="text-stone-400 text-sm">คะแนนรวมทั้งหมด</div>
-                <div id="final-score" class="text-5xl font-black text-amber-400 my-1">0</div>
+            <div class="bg-stone-800/80 rounded-2xl p-4 mb-6 border border-stone-700/80 shadow-inner">
+                <div class="text-stone-400 text-sm font-bold uppercase tracking-widest">คะแนนรวมทั้งหมด</div>
+                <div id="final-score" class="text-5xl font-black text-amber-400 my-1 text-glow">0</div>
             </div>
 
-            <button id="restart-btn" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-600 hover:to-red-700 text-white font-bold py-3 px-6 rounded-xl text-lg shadow-lg transform active:scale-95 transition-all pointer-events-auto">
+            <button id="restart-btn" class="w-full bg-gradient-to-r from-amber-600 via-red-600 to-amber-700 hover:from-amber-700 hover:to-red-800 text-white font-extrabold py-4 px-6 rounded-xl text-xl shadow-[0_0_20px_rgba(217,119,6,0.5)] transform active:scale-95 transition-all pointer-events-auto tracking-wide">
                 เล่นใหม่อีกครั้ง 🔄
             </button>
         </div>
@@ -112,16 +115,16 @@
             { cn: "钱", pinyin: "qián", th: "เงิน" }
         ];
 
-        // ชนิดผลไม้หลากสีสัน
+        // ชนิดผลไม้หลากสีสัน (ปรับโทนสีให้นุ่มลึก ไม่สว่างจ้าเกินไป)
         const FRUIT_TYPES = [
-            { name: 'watermelon', bg: '#15803d', inner: '#fca5a5', border: '#166534', pColor: '#ef4444' },
-            { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },
-            { name: 'apple', bg: '#dc2626', inner: '#fef3c7', border: '#991b1b', pColor: '#ef4444' },
-            { name: 'strawberry', bg: '#e11d48', inner: '#fecdd3', border: '#9f1239', pColor: '#fb7185' },
-            { name: 'lemon', bg: '#eab308', inner: '#fef9c3', border: '#a16207', pColor: '#facc15' },
-            { name: 'blueberry', bg: '#2563eb', inner: '#dbeafe', border: '#1e40af', pColor: '#60a5fa' },
-            { name: 'dragonfruit', bg: '#db2777', inner: '#f1f5f9', border: '#9d174d', pColor: '#f472b6' },
-            { name: 'kiwi', bg: '#65a30d', inner: '#ecfccb', border: '#3f6212', pColor: '#a3e635' }
+            { name: 'watermelon', bg: '#14532d', inner: '#f87171', border: '#052e16', pColor: '#dc2626' },
+            { name: 'orange', bg: '#c2410c', inner: '#ffedd5', border: '#7c2d12', pColor: '#ea580c' },
+            { name: 'apple', bg: '#991b1b', inner: '#fef3c7', border: '#450a0a', pColor: '#dc2626' },
+            { name: 'strawberry', bg: '#9f1239', inner: '#fecdd3', border: '#4c0519', pColor: '#e11d48' },
+            { name: 'lemon', bg: '#ca8a04', inner: '#fef9c3', border: '#713f12', pColor: '#eab308' },
+            { name: 'blueberry', bg: '#1d4ed8', inner: '#dbeafe', border: '#1e3a8a', pColor: '#2563eb' },
+            { name: 'dragonfruit', bg: '#9d174d', inner: '#f1f5f9', border: '#500724', pColor: '#db2777' },
+            { name: 'kiwi', bg: '#4d7c0f', inner: '#ecfccb', border: '#1a2e05', pColor: '#65a30d' }
         ];
 
         // --- 2. ระบบ Web Audio API สำหรับเอฟเฟกต์เสียง ---
@@ -138,24 +141,24 @@
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.1);
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(1400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.09);
                 gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.1);
+                osc.stop(this.ctx.currentTime + 0.09);
             }
             playHit() {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(300, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.5, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(450, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.55, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -167,23 +170,23 @@
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(40, this.ctx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0.8, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.5);
+                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(25, this.ctx.currentTime + 0.55);
+                gain.gain.setValueAtTime(0.85, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.55);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
                 osc.start();
-                osc.stop(this.ctx.currentTime + 0.5);
+                osc.stop(this.ctx.currentTime + 0.55);
             }
             playWrong() {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
                 osc.type = 'square';
-                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
-                osc.frequency.setValueAtTime(110, this.ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(240, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(130, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -221,17 +224,30 @@
         let items = [];
         let fruitHalves = [];
         let particles = [];
+        let slashMarks = [];
+        let shockwaves = [];
+        let floatingTexts = [];
+        let bgEmbers = [];
+        
         let slicePath = [];
         let isSlicing = false;
 
         let spawnTimer = 0;
-        let nextSpawnInterval = 80; // ปรับช่วงเริ่มต้นให้เว้นระยะมากขึ้น
+        let nextSpawnInterval = 50; // ปรับเพิ่มความถี่ขึ้นเล็กน้อย
 
-        let lastSpawnX = null; // บันทึกตำแหน่งเกิดลูกล่าสุดเพื่อป้องกันการโผล่ติดกัน
+        let lastSpawnX = null;
         let targetSpawnCounter = 0;
 
         let lastDamageTime = 0;
         const DAMAGE_COOLDOWN = 500;
+
+        let shakeTime = 0;
+        let shakeMagnitude = 0;
+
+        function triggerScreenShake(magnitude = 10, duration = 12) {
+            shakeMagnitude = magnitude;
+            shakeTime = duration;
+        }
 
         // --- 4. คลาสสร้างวัตถุ ---
         class Item {
@@ -240,7 +256,6 @@
                 if (this.radius < 60) this.radius = 60;
                 if (this.radius > 85) this.radius = 85;
 
-                // กำหนดตำแหน่ง X ให้ห่างจากลูกก่อนหน้าอย่างน้อย 180px
                 if (forcedX !== null) {
                     this.x = forcedX;
                 } else {
@@ -258,15 +273,25 @@
 
                 this.y = height + this.radius;
 
-                // ความเร็วส่งขึ้นเพิ่มขึ้นเล็กน้อยเมื่อคะแนนสูงขึ้น
                 const speedBoost = Math.min(score * 0.05, 3.0);
                 const speedMult = height / 800;
 
                 const centerOffset = (this.x - width / 2) / (width / 2);
-                this.vx = -centerOffset * (Math.random() * 2 + 0.8) + (Math.random() - 0.5) * 1.5;
+                this.vx = -centerOffset * (Math.random() * 2.5 + 1.2) + (Math.random() - 0.5) * 2;
                 
-                this.vy = -(Math.random() * 3 + 11.0 + speedBoost) * speedMult;
-                this.gravity = (Math.random() * 0.03 + 0.22) * speedMult;
+                // สุ่มความสูงหลากหลายระดับ
+                const launchTier = Math.random();
+                let baseSpeed;
+                if (launchTier < 0.3) {
+                    baseSpeed = Math.random() * 2.5 + 9.5;
+                } else if (launchTier < 0.7) {
+                    baseSpeed = Math.random() * 2.0 + 12.0;
+                } else {
+                    baseSpeed = Math.random() * 2.5 + 14.5;
+                }
+
+                this.vy = -(baseSpeed + speedBoost) * speedMult;
+                this.gravity = (Math.random() * 0.04 + 0.22) * speedMult;
 
                 this.rotation = (Math.random() - 0.5) * 0.3; 
                 this.vRot = (Math.random() - 0.5) * 0.03;
@@ -290,24 +315,29 @@
                 ctx.rotate(this.rotation);
 
                 if (this.isBomb) {
+                    ctx.shadowColor = '#dc2626';
+                    ctx.shadowBlur = 12;
+
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = '#1c1917';
+                    ctx.fillStyle = '#18181b';
                     ctx.fill();
-                    ctx.lineWidth = 4;
-                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 3.5;
+                    ctx.strokeStyle = '#dc2626';
                     ctx.stroke();
 
+                    // ชนวน
                     ctx.beginPath();
                     ctx.moveTo(0, -this.radius);
                     ctx.quadraticCurveTo(10, -this.radius - 15, 15, -this.radius - 20);
                     ctx.lineWidth = 3;
-                    ctx.strokeStyle = '#d97706';
+                    ctx.strokeStyle = '#b45309';
                     ctx.stroke();
 
+                    // ประกายไฟ
                     ctx.beginPath();
                     ctx.arc(15, -this.radius - 20, 6, 0, Math.PI * 2);
-                    ctx.fillStyle = '#f59e0b';
+                    ctx.fillStyle = '#d97706';
                     ctx.fill();
 
                     ctx.fillStyle = '#ef4444';
@@ -318,38 +348,49 @@
                 } else {
                     const ft = this.fruitType;
 
+                    // ปรับเงาให้นุ่มพอดี ไม่ฟุ้งสว่างจ้า
+                    ctx.shadowColor = ft.pColor;
+                    ctx.shadowBlur = 10;
+
+                    // เปลือกผลไม้
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                     ctx.fillStyle = ft.bg;
                     ctx.fill();
-                    ctx.lineWidth = 4;
+                    ctx.lineWidth = 3.5;
                     ctx.strokeStyle = ft.border;
                     ctx.stroke();
 
+                    // เนื้อในผลไม้
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius * 0.86, 0, Math.PI * 2);
                     ctx.fillStyle = ft.inner;
                     ctx.fill();
 
+                    // ใบไม้ขั้ว
                     ctx.beginPath();
                     ctx.ellipse(0, -this.radius * 0.92, this.radius * 0.32, this.radius * 0.16, Math.PI / 4, 0, Math.PI * 2);
-                    ctx.fillStyle = '#16a34a';
+                    ctx.fillStyle = '#15803d';
                     ctx.fill();
 
+                    // แถบป้ายสว่างตรงกลาง (ลดความจ้าลงเล็กน้อย)
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius * 0.72, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+                    ctx.fillStyle = 'rgba(248, 250, 252, 0.88)';
                     ctx.fill();
                     ctx.lineWidth = 1.5;
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
                     ctx.stroke();
 
-                    ctx.fillStyle = '#1e293b';
+                    // พินอิน
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#334155';
                     ctx.font = `bold ${this.radius * 0.28}px sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.36);
 
+                    // อักษรจีน
                     ctx.fillStyle = '#0f172a';
                     ctx.font = `bold ${this.radius * 0.58}px "PingFang SC", "Microsoft YaHei", sans-serif`;
                     ctx.textAlign = 'center';
@@ -372,10 +413,10 @@
                 this.rotation = sliceAngle;
 
                 const pushDir = isLeft ? -1 : 1;
-                this.vx = pushDir * (Math.random() * 4 + 3);
-                this.vy = -(Math.random() * 3 + 2);
-                this.vRot = pushDir * (Math.random() * 0.1 + 0.05);
-                this.gravity = 0.35;
+                this.vx = pushDir * (Math.random() * 5 + 4);
+                this.vy = -(Math.random() * 4 + 2);
+                this.vRot = pushDir * (Math.random() * 0.18 + 0.1);
+                this.gravity = 0.4;
                 this.alpha = 1;
             }
 
@@ -384,7 +425,7 @@
                 this.y += this.vy;
                 this.vy += this.gravity;
                 this.rotation += this.vRot;
-                this.alpha -= 0.015;
+                this.alpha -= 0.018;
             }
 
             draw() {
@@ -394,6 +435,9 @@
                 ctx.rotate(this.rotation);
 
                 const ft = this.fruitType;
+                ctx.shadowColor = ft.pColor;
+                ctx.shadowBlur = 8;
+
                 ctx.beginPath();
                 if (this.isLeft) {
                     ctx.arc(0, 0, this.radius, Math.PI * 0.5, Math.PI * 1.5);
@@ -416,31 +460,51 @@
                 ctx.fillStyle = ft.inner;
                 ctx.fill();
 
+                // เส้นขอบตรงรอยตัด
+                ctx.beginPath();
+                ctx.moveTo(0, -this.radius);
+                ctx.lineTo(0, this.radius);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#f8fafc';
+                ctx.stroke();
+
                 ctx.restore();
             }
         }
 
-        // --- 6. คลาสสำหรับอนุภาคกระจาย ---
+        // --- 6. คลาสสำหรับอนุภาคประกายไฟนินจา ---
         class Particle {
-            constructor(x, y, color) {
+            constructor(x, y, color, isSpark = false) {
                 this.x = x;
                 this.y = y;
-                this.radius = Math.random() * 5 + 2;
-                this.vx = (Math.random() - 0.5) * 14;
-                this.vy = (Math.random() - 0.5) * 14;
+                this.isSpark = isSpark;
+                this.radius = isSpark ? Math.random() * 3 + 1 : Math.random() * 6 + 2.5;
+                
+                const speed = isSpark ? (Math.random() * 18 + 6) : (Math.random() * 12 + 4);
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                
+                this.gravity = isSpark ? 0.08 : 0.28;
                 this.alpha = 1;
                 this.color = color;
+                this.decay = isSpark ? (Math.random() * 0.045 + 0.03) : (Math.random() * 0.025 + 0.015);
             }
 
             update() {
                 this.x += this.vx;
                 this.y += this.vy;
-                this.alpha -= 0.03;
+                this.vy += this.gravity;
+                this.alpha -= this.decay;
             }
 
             draw() {
                 ctx.save();
                 ctx.globalAlpha = Math.max(0, this.alpha);
+                if (this.isSpark) {
+                    ctx.shadowColor = this.color;
+                    ctx.shadowBlur = 8;
+                }
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
@@ -449,17 +513,162 @@
             }
         }
 
-        // --- 7. วาดฉากหลัง ---
+        // --- 7. คลาสสำหรับประกายไฟหมอกควันพื้นหลัง ---
+        class BgEmber {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + 10;
+                this.radius = Math.random() * 2 + 1;
+                this.vy = -(Math.random() * 1.2 + 0.4);
+                this.vx = (Math.random() - 0.5) * 0.6;
+                this.alpha = Math.random() * 0.4 + 0.1;
+                this.color = Math.random() < 0.5 ? '#d97706' : '#c2410c';
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.0025;
+                if (this.y < -10 || this.alpha <= 0) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 5;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- 8. คลาสสำหรับรอยแผลดาบตัดกลางอากาศ ---
+        class SlashMark {
+            constructor(x, y, angle, color = '#fef08a') {
+                this.x = x;
+                this.y = y;
+                this.angle = angle;
+                this.length = Math.random() * 120 + 100;
+                this.width = Math.random() * 8 + 6;
+                this.alpha = 1;
+                this.color = color;
+            }
+
+            update() {
+                this.alpha -= 0.06;
+                this.width *= 0.90;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 15;
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.length / 2, this.width / 2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, this.length * 0.6, this.width * 1.4, 0, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // --- 9. คลาสสำหรับคลื่นช็อกเวฟวงแหวนพลังงาน ---
+        class Shockwave {
+            constructor(x, y, color = '#ef4444') {
+                this.x = x;
+                this.y = y;
+                this.radius = 10;
+                this.maxRadius = 140;
+                this.alpha = 1;
+                this.lineWidth = 10;
+                this.color = color;
+            }
+
+            update() {
+                this.radius += (this.maxRadius - this.radius) * 0.22;
+                this.alpha -= 0.048;
+                this.lineWidth *= 0.94;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.lineWidth = this.lineWidth;
+                ctx.strokeStyle = this.color;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // --- 10. คลาสสำหรับข้อความเอฟเฟกต์ลอย ---
+        class FloatingText {
+            constructor(x, y, text, color = '#d97706') {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.alpha = 1;
+                this.scale = 0.4;
+                this.vy = -3.2;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.alpha -= 0.026;
+                if (this.scale < 1.25) this.scale += 0.09;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.translate(this.x, this.y);
+                ctx.scale(this.scale, this.scale);
+
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 12;
+                ctx.font = 'black 32px sans-serif';
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = this.color;
+                ctx.strokeText(this.text, 0, 0);
+                ctx.fillText(this.text, 0, 0);
+
+                ctx.restore();
+            }
+        }
+
+        // --- 11. วาดฉากหลัง (ลดมืดโปร่งด้านล่างลง) ---
         function drawBackground() {
+            // ฉากหลังเน้นมืด นุ่มนวล ไม่จ้า
             const grad = ctx.createLinearGradient(0, 0, 0, height);
-            grad.addColorStop(0, '#29180e');
-            grad.addColorStop(0.5, '#452715');
-            grad.addColorStop(1, '#1c0d06');
+            grad.addColorStop(0, '#1c0d06');
+            grad.addColorStop(0.5, '#2e1408');
+            grad.addColorStop(1, '#140703'); // ปรับโทนล่างให้สว่างขึ้นเล็กน้อย เห็นผลไม้พุ่งชัดเจน
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, width, height);
 
-            ctx.strokeStyle = '#180a04';
-            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#120502';
+            ctx.lineWidth = 2.5;
             const plankWidth = 80;
             for (let x = 0; x < width; x += plankWidth) {
                 ctx.beginPath();
@@ -468,14 +677,15 @@
                 ctx.stroke();
             }
 
+            // แสงโคมไฟตรงกลางที่นุ่มลง
             const lightGrad = ctx.createRadialGradient(width / 2, height / 3, 50, width / 2, height / 3, width * 0.7);
-            lightGrad.addColorStop(0, 'rgba(251, 191, 36, 0.12)');
-            lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.4)');
+            lightGrad.addColorStop(0, 'rgba(217, 119, 6, 0.12)');
+            lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)'); // ลดความดำทึบลง
             ctx.fillStyle = lightGrad;
             ctx.fillRect(0, 0, width, height);
         }
 
-        // --- 8. ระบบสุ่มและจัดการเป้าหมายคำศัพท์ ---
+        // --- 12. ระบบสุ่มและจัดการเป้าหมายคำศัพท์ ---
         function generateNewWordSet() {
             const shuffled = [...vocabularyDB].sort(() => Math.random() - 0.5);
             currentWordSet = shuffled.slice(0, 3);
@@ -511,13 +721,13 @@
             text.innerText = `⏱️ เปลี่ยนคำศัพท์ใน: ${secondsLeft}s`;
 
             if (pct < 30) {
-                bar.className = "bg-gradient-to-r from-red-600 to-amber-500 h-full rounded-full transition-all duration-100 ease-linear";
+                bar.className = "bg-gradient-to-r from-red-600 via-amber-600 to-red-500 h-full rounded-full transition-all duration-100 ease-linear shadow-[0_0_8px_#dc2626]";
             } else {
-                bar.className = "bg-gradient-to-r from-amber-500 to-yellow-300 h-full rounded-full transition-all duration-100 ease-linear";
+                bar.className = "bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-300 h-full rounded-full transition-all duration-100 ease-linear shadow-[0_0_8px_#d97706]";
             }
         }
 
-        // --- 9. การรับฟันคำและเช็คการชน ---
+        // --- 13. การรับฟันคำและเช็คการชน ---
         function checkSliceCollision(x1, y1, x2, y2) {
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i];
@@ -527,26 +737,36 @@
 
                 if (dist < item.radius) {
                     item.isSliced = true;
+                    const angle = Math.atan2(y2 - y1, x2 - x1);
+
+                    slashMarks.push(new SlashMark(item.x, item.y, angle, item.isBomb ? '#ef4444' : '#fef08a'));
 
                     if (item.isBomb) {
-                        createParticles(item.x, item.y, '#ef4444');
+                        createExplosionFX(item.x, item.y, '#ef4444');
                         soundFX.playBomb();
+                        triggerScreenShake(18, 18);
+                        floatingTexts.push(new FloatingText(item.x, item.y, "BOOM!", "#ef4444"));
                         loseLife("คุณฟันโดนระเบิด! 💣");
                     } else {
-                        const angle = Math.atan2(y2 - y1, x2 - x1);
                         fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, true, angle));
                         fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, false, angle));
 
-                        createParticles(item.x, item.y, item.fruitType.pColor);
+                        createFruitCutFX(item.x, item.y, item.fruitType.pColor);
+                        triggerScreenShake(8, 10);
 
                         if (item.wordObj.cn === currentTarget.cn) {
                             soundFX.playHit();
                             score += 10;
                             document.getElementById('score-val').innerText = score;
                             
+                            const comboWords = ["GREAT!", "PERFECT!", "EXCELLENT!", "CRITICAL!"];
+                            const randomCombo = comboWords[Math.floor(Math.random() * comboWords.length)];
+                            floatingTexts.push(new FloatingText(item.x, item.y, randomCombo, "#d97706"));
+
                             advanceTarget();
                         } else {
                             soundFX.playWrong();
+                            floatingTexts.push(new FloatingText(item.x, item.y, "WRONG!", "#dc2626"));
                             loseLife("ฟันผิดคำศัพท์! ❌");
                         }
                     }
@@ -564,10 +784,24 @@
             return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
         }
 
-        function createParticles(x, y, color) {
+        function createFruitCutFX(x, y, color) {
             for (let i = 0; i < 22; i++) {
-                particles.push(new Particle(x, y, color));
+                particles.push(new Particle(x, y, color, false));
             }
+            for (let i = 0; i < 14; i++) {
+                particles.push(new Particle(x, y, '#ffffff', true));
+            }
+            shockwaves.push(new Shockwave(x, y, color));
+        }
+
+        function createExplosionFX(x, y, color) {
+            for (let i = 0; i < 35; i++) {
+                particles.push(new Particle(x, y, '#ea580c', true));
+            }
+            for (let i = 0; i < 22; i++) {
+                particles.push(new Particle(x, y, '#dc2626', false));
+            }
+            shockwaves.push(new Shockwave(x, y, color));
         }
 
         function loseLife(reason = "ชีวิตของคุณหมดลงแล้ว! 💔") {
@@ -603,7 +837,7 @@
             }
         }
 
-        // --- 10. ลูปหลักของเกม (ปรับความถี่ให้เว้นระยะพอดี) ---
+        // --- 14. ลูปหลักของเกม (ปรับเพิ่มจังหวะถี่ขึ้นนิดหน่อย) ---
         function gameLoop(timestamp) {
             if (isGameOver) return;
 
@@ -620,20 +854,34 @@
                 }
             }
 
+            ctx.save();
+            if (shakeTime > 0) {
+                const shakeX = (Math.random() - 0.5) * shakeMagnitude;
+                const shakeY = (Math.random() - 0.5) * shakeMagnitude;
+                ctx.translate(shakeX, shakeY);
+                shakeTime--;
+            }
+
             drawBackground();
 
-            // ปรับจังหวะสุ่มให้ความถี่อยู่ในช่วง 0.8s ถึง 1.8s ไม่ถี่เกินไป
+            // อัปเดตประกายไฟพื้นหลัง
+            for (let i = 0; i < bgEmbers.length; i++) {
+                bgEmbers[i].update();
+                bgEmbers[i].draw();
+            }
+
+            // ปล่อยวัตถุ (ปรับให้ถี่ขึ้นนิดหน่อย: ช่วง 0.6s - 1.4s)
             spawnTimer++;
             if (spawnTimer >= nextSpawnInterval) {
                 spawnTimer = 0;
                 spawnSingleItem();
 
-                // ค่อยๆ ปรับกระชับเวลาขึ้นเล็กน้อยตามคะแนน
-                const minInterval = Math.max(45, 75 - Math.floor(score / 25) * 5);
-                const maxInterval = Math.max(85, 130 - Math.floor(score / 20) * 6);
+                const minInterval = Math.max(35, 60 - Math.floor(score / 25) * 4);
+                const maxInterval = Math.max(70, 110 - Math.floor(score / 20) * 5);
                 nextSpawnInterval = Math.floor(Math.random() * (maxInterval - minInterval)) + minInterval;
             }
 
+            // อัปเดตและวาดวัตถุผลไม้
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i];
                 item.update();
@@ -644,6 +892,7 @@
                 }
             }
 
+            // อัปเดตและวาดผลไม้ซีก
             for (let i = fruitHalves.length - 1; i >= 0; i--) {
                 const fh = fruitHalves[i];
                 fh.update();
@@ -653,6 +902,23 @@
                 }
             }
 
+            // อัปเดตและวาดคลื่นช็อกเวฟ
+            for (let i = shockwaves.length - 1; i >= 0; i--) {
+                const sw = shockwaves[i];
+                sw.update();
+                sw.draw();
+                if (sw.alpha <= 0) shockwaves.splice(i, 1);
+            }
+
+            // อัปเดตและวาดรอยแผลตัดกลางอากาศ
+            for (let i = slashMarks.length - 1; i >= 0; i--) {
+                const sm = slashMarks[i];
+                sm.update();
+                sm.draw();
+                if (sm.alpha <= 0) slashMarks.splice(i, 1);
+            }
+
+            // อัปเดตและวาดอนุภาคประกายไฟ
             for (let i = particles.length - 1; i >= 0; i--) {
                 const p = particles[i];
                 p.update();
@@ -660,7 +926,18 @@
                 if (p.alpha <= 0) particles.splice(i, 1);
             }
 
-            drawSliceTrail();
+            // อัปเดตและวาดข้อความเอฟเฟกต์ลอย
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.update();
+                ft.draw();
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+
+            // วาดรอยดาบนินจาพลังแสง
+            drawSuperSliceTrail();
+
+            ctx.restore();
 
             requestAnimationFrame(gameLoop);
         }
@@ -690,32 +967,66 @@
             }
         }
 
-        function drawSliceTrail() {
+        // วาดเส้นดาบนินจาแบบ Neon Trail พอดีสายตา
+        function drawSuperSliceTrail() {
             if (slicePath.length < 2) return;
 
             ctx.save();
+
+            // ชั้นที่ 1: รัศมีออร่านุ่มนวล
             ctx.beginPath();
             ctx.moveTo(slicePath[0].x, slicePath[0].y);
-
             for (let i = 1; i < slicePath.length; i++) {
                 ctx.lineTo(slicePath[i].x, slicePath[i].y);
             }
-
-            ctx.lineWidth = 7;
-            ctx.strokeStyle = '#fef08a';
-            ctx.shadowColor = '#f59e0b';
-            ctx.shadowBlur = 15;
+            ctx.lineWidth = 14;
+            ctx.strokeStyle = 'rgba(217, 119, 6, 0.3)';
+            ctx.shadowColor = '#d97706';
+            ctx.shadowBlur = 18;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.stroke();
+
+            // ชั้นที่ 2: เส้นสีส้มเหลืองหลัก
+            ctx.beginPath();
+            ctx.moveTo(slicePath[0].x, slicePath[0].y);
+            for (let i = 1; i < slicePath.length; i++) {
+                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            }
+            ctx.lineWidth = 7;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.shadowColor = '#f59e0b';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // ชั้นที่ 3: แกนแสงสีขาวตรงกลาง
+            ctx.beginPath();
+            ctx.moveTo(slicePath[0].x, slicePath[0].y);
+            for (let i = 1; i < slicePath.length; i++) {
+                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            }
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#ffffff';
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+
+            // หัวดาบเรืองแสง
+            const tip = slicePath[slicePath.length - 1];
+            ctx.beginPath();
+            ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowColor = '#fef08a';
+            ctx.shadowBlur = 16;
+            ctx.fill();
+
             ctx.restore();
 
-            if (slicePath.length > 8) {
+            if (slicePath.length > 9) {
                 slicePath.shift();
             }
         }
 
-        // --- 11. การจับเหตุการณ์เมาส์และทัชสกรีน ---
+        // --- 15. การจับเหตุการณ์เมาส์และทัชสกรีน ---
         function handlePointerDown(e) {
             soundFX.init();
             isSlicing = true;
@@ -760,7 +1071,7 @@
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, { passive: false });
         window.addEventListener('touchend', handlePointerUp);
 
-        // --- 12. ระบบควบคุมสถานะเกม ---
+        // --- 16. ระบบควบคุมสถานะเกม ---
         function startGame() {
             score = 0;
             lives = 5;
@@ -768,12 +1079,23 @@
             lastDamageTime = 0;
             lastTimestamp = 0;
             lastSpawnX = null;
+            shakeTime = 0;
+            
             items = [];
             fruitHalves = [];
             particles = [];
+            slashMarks = [];
+            shockwaves = [];
+            floatingTexts = [];
             slicePath = [];
+
+            bgEmbers = [];
+            for (let i = 0; i < 16; i++) {
+                bgEmbers.push(new BgEmber());
+            }
+
             spawnTimer = 0;
-            nextSpawnInterval = 70;
+            nextSpawnInterval = 50;
             targetSpawnCounter = 0;
 
             document.getElementById('score-val').innerText = '0';
