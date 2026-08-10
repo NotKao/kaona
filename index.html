@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Chinese Vocab Fruit Ninja - นินจาคำศัพท์จีน</title>
+    <title>นินจาศัพท์จีน - Chinese Vocab Ninja</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -12,20 +12,42 @@
             -webkit-user-select: none;
             overflow: hidden;
             font-family: 'Sarabun', system-ui, -apple-system, sans-serif;
-            background-color: #0b0604;
+            background-color: #030202;
         }
         canvas {
             display: block;
         }
         @keyframes damageFlash {
-            0% { opacity: 0.8; }
+            0% { opacity: 0.85; }
             100% { opacity: 0; }
         }
         .damage-overlay {
             animation: damageFlash 0.4s ease-out forwards;
         }
         .text-glow {
-            text-shadow: 0 0 10px rgba(217, 119, 6, 0.8), 0 0 20px rgba(180, 83, 9, 0.5);
+            text-shadow: 0 0 15px rgba(217, 119, 6, 0.95), 0 0 30px rgba(180, 83, 9, 0.8);
+        }
+        .card-glow-selected {
+            box-shadow: 0 0 25px rgba(217, 119, 6, 0.8), inset 0 0 15px rgba(245, 158, 11, 0.4);
+            border-color: #f59e0b !important;
+            background-color: rgba(28, 25, 23, 0.98);
+        }
+        @keyframes comboPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.18); }
+            100% { transform: scale(1); }
+        }
+        .combo-active {
+            animation: comboPulse 0.35s ease-in-out;
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(251, 191, 36, 0.6);
+            border-color: #f59e0b !important;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -33,171 +55,233 @@
 
     <!-- เอฟเฟกต์หน้าจอกระพริบสีแดงเมื่อเสียชีวิต -->
     <div id="damage-flash" class="absolute inset-0 bg-red-600/60 pointer-events-none z-30 opacity-0"></div>
+    
+    <!-- เอฟเฟกต์น้ำแข็ง Freeze แบบคมชัด ไม่เบลอตัวอักษร -->
+    <div id="freeze-overlay" class="absolute inset-0 border-[14px] border-cyan-400/50 bg-cyan-950/10 pointer-events-none z-20 opacity-0 transition-opacity duration-300 shadow-[inset_0_0_60px_rgba(6,182,212,0.45)]"></div>
 
     <!-- UI Overlay ด้านบน -->
-    <div id="ui-overlay" class="absolute top-0 left-0 w-full p-4 flex flex-col items-center justify-between pointer-events-none z-10">
-        <!-- กล่องเป้าหมายคำศัพท์ไทย -->
-        <div class="bg-stone-900/90 border-2 border-amber-600/80 rounded-2xl px-6 py-3 shadow-[0_0_20px_rgba(180,83,9,0.3)] backdrop-blur-md text-center max-w-xs sm:max-w-md w-full my-2 relative overflow-hidden">
-            <span class="text-xs uppercase tracking-widest text-amber-400 font-bold block mb-1">🎯 คำแปลภาษาไทย (ฟันผลไม้ที่มีอักษรจีนตรงกัน)</span>
-            <div id="target-word" class="text-2xl sm:text-4xl font-extrabold text-white text-glow my-1 tracking-wide">
+    <div id="ui-overlay" class="absolute top-0 left-0 w-full p-2.5 flex flex-col items-center justify-between pointer-events-none z-10 gap-1.5">
+        
+        <!-- กล่องเป้าหมายคำศัพท์ไทย (12 วินาทีเปลี่ยน) -->
+        <div class="bg-stone-900/95 border-2 border-amber-500/90 rounded-2xl px-5 py-2 shadow-[0_0_25px_rgba(217,119,6,0.4)] backdrop-blur-md text-center max-w-xs sm:max-w-md w-full relative overflow-hidden pointer-events-auto">
+            <div class="flex justify-between items-center mb-0.5">
+                <span class="text-[10px] uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1">
+                    🎯 ฟันอักษรจีนให้ตรงกับคำไทย
+                </span>
+                <span id="map-indicator" class="text-[9px] bg-amber-950 border border-amber-600/60 text-amber-300 px-2.5 py-0.5 rounded-full font-semibold">⛩️ โรงฝึกไม้</span>
+            </div>
+            
+            <div id="target-word" class="text-2xl sm:text-3xl font-black text-white text-glow tracking-wider my-0.5">
                 ---
             </div>
             
-            <!-- แถบแสดงเวลาถอยหลังการเปลี่ยนคำศัพท์ -->
-            <div class="mt-2 w-full bg-stone-950/90 rounded-full h-3 border border-amber-700/60 p-0.5 relative overflow-hidden shadow-inner">
+            <!-- แถบแสดงเวลาถอยหลังการเปลี่ยนคำศัพท์ 12s -->
+            <div class="mt-1 w-full bg-stone-950/90 rounded-full h-2.5 border border-amber-700/60 p-0.5 relative overflow-hidden shadow-inner">
                 <div id="target-timer-bar" class="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-300 h-full rounded-full transition-all duration-100 ease-linear w-full shadow-[0_0_8px_#d97706]"></div>
             </div>
-            <div id="target-timer-text" class="text-[11px] text-amber-200/90 mt-1 font-bold tracking-wider">
-                ⏱️ เปลี่ยนคำศัพท์ใน: 15s
+            <div id="target-timer-text" class="text-[10px] text-amber-200/90 mt-0.5 font-bold tracking-wider">
+                ⏱️ เปลี่ยนคำศัพท์ใน: 12s
             </div>
         </div>
 
-        <!-- แถบสถานะ คะแนน และ ชีวิต (5 ชีวิต) -->
-        <div class="w-full max-w-md flex justify-between items-center px-2">
-            <div class="bg-stone-900/90 px-5 py-2.5 rounded-xl border border-amber-600/40 text-white font-bold text-lg flex items-center gap-2 shadow-lg backdrop-blur-md">
-                <span class="text-amber-400">🏆 คะแนน:</span>
-                <span id="score-val" class="text-amber-400 text-3xl font-black text-glow">0</span>
+        <!-- แถบสถานะ คะแนน COMBO หมวดหมู่ ชีวิต และปุ่มออก -->
+        <div class="w-full max-w-md flex justify-between items-center px-1">
+            <div class="flex items-center gap-1.5">
+                <!-- คะแนน -->
+                <div class="bg-stone-900/90 px-3 py-1 rounded-xl border border-amber-600/40 text-white font-bold text-xs flex items-center gap-2 shadow-lg backdrop-blur-md">
+                    <div>
+                        <span class="text-amber-400 text-[9px] block uppercase font-bold tracking-wider">คะแนน</span>
+                        <span id="score-val" class="text-amber-400 text-lg font-black text-glow">0</span>
+                    </div>
+                </div>
+
+                <!-- ป้ายแสดง COMBO -->
+                <div id="combo-badge" class="bg-gradient-to-r from-amber-950 to-stone-900 px-3 py-1 rounded-xl border border-amber-500/60 text-amber-300 font-black text-xs flex items-center gap-1 shadow-lg backdrop-blur-md opacity-0 transition-all duration-200">
+                    <span class="text-sm">🔥</span>
+                    <span id="combo-val" class="text-amber-300 font-extrabold text-sm">x1</span>
+                </div>
+
+                <!-- ป้ายหมวดหมู่ -->
+                <div class="bg-stone-900/90 px-2.5 py-1 rounded-xl border border-stone-800 text-amber-200 font-bold text-xs flex items-center gap-1 shadow-lg backdrop-blur-md hidden sm:flex">
+                    <span id="category-badge">🍎 ผลไม้สด</span>
+                </div>
             </div>
 
-            <div id="lives-container" class="flex gap-1.5 text-xl sm:text-2xl filter drop-shadow-[0_0_8px_rgba(220,38,38,0.7)] bg-stone-900/80 px-4 py-2 rounded-xl backdrop-blur-md border border-stone-800">
-                <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
+            <div class="flex items-center gap-1.5">
+                <div id="lives-container" class="flex gap-0.5 text-xs sm:text-sm filter drop-shadow-[0_0_8px_rgba(220,38,38,0.7)] bg-stone-900/90 px-2.5 py-1 rounded-xl backdrop-blur-md border border-stone-800">
+                    <span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span><span>❤️</span>
+                </div>
+
+                <!-- ปุ่มกดออกจากเกม -->
+                <button id="exit-btn" class="bg-stone-900/90 hover:bg-stone-800 active:scale-95 border border-amber-600/50 text-amber-200 px-2.5 py-1.5 rounded-xl font-black text-xs shadow-lg backdrop-blur-md pointer-events-auto transition flex items-center gap-1">
+                    🚪 ออก
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- หน้าต่าง Game Over -->
-    <div id="game-over-modal" class="absolute inset-0 bg-black/92 backdrop-blur-xl z-20 flex flex-col justify-center items-center text-white hidden p-4">
-        <div class="bg-stone-900 border-2 border-red-600/80 rounded-3xl p-8 max-w-sm w-full text-center shadow-[0_0_40px_rgba(220,38,38,0.4)] relative overflow-hidden">
-            <h1 id="game-over-title" class="text-4xl font-black text-red-500 mb-2 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] tracking-wider">GAME OVER</h1>
-            <p id="game-over-reason" class="text-stone-300 mb-6 text-sm font-medium">ชีวิตของคุณหมดลงแล้ว</p>
+    <!-- หน้าต่างพักเกม / ยืนยันออกจากเกม (Pause Modal) -->
+    <div id="pause-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex flex-col justify-center items-center text-white hidden p-4">
+        <div class="bg-stone-900 border-2 border-amber-600/80 rounded-3xl p-6 max-w-sm w-full text-center shadow-[0_0_50px_rgba(217,119,6,0.5)]">
+            <h2 class="text-2xl font-black text-amber-400 mb-1">⏸️ พักเกม</h2>
+            <p class="text-stone-300 mb-5 text-xs font-medium">คุณต้องการเล่นต่อหรือกลับสู่เมนูหลัก?</p>
+            <div class="flex flex-col gap-3 pointer-events-auto">
+                <button id="resume-btn" class="w-full bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-700 hover:from-amber-500 hover:to-yellow-500 text-stone-950 font-black py-3 rounded-xl text-base shadow-lg transform active:scale-95 transition">
+                    ▶️ เล่นต่อ
+                </button>
+                <button id="exit-menu-btn" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 font-bold py-2.5 rounded-xl text-xs border border-stone-700 transform active:scale-95 transition">
+                    🚪 ออกไปยังเมนูหลัก
+                </button>
+            </div>
+        </div>
+    </div>
 
-            <div class="bg-stone-800/80 rounded-2xl p-4 mb-6 border border-stone-700/80 shadow-inner">
-                <div class="text-stone-400 text-sm font-bold uppercase tracking-widest">คะแนนรวมทั้งหมด</div>
-                <div id="final-score" class="text-5xl font-black text-amber-400 my-1 text-glow">0</div>
+    <!-- เมนูตั้งค่าก่อนเริ่มเกม (Start Menu) -->
+    <div id="start-menu-modal" class="absolute inset-0 bg-black/95 backdrop-blur-2xl z-30 flex flex-col justify-center items-center text-white p-3 overflow-y-auto">
+        <div class="bg-gradient-to-b from-stone-900 via-stone-950 to-black border-2 border-amber-600/80 rounded-3xl p-5 sm:p-6 max-w-md w-full text-center shadow-[0_0_50px_rgba(217,119,6,0.35)] relative overflow-hidden my-auto">
+            
+            <div class="absolute -top-10 -right-10 text-stone-800/20 text-8xl font-black pointer-events-none select-none">忍</div>
+            
+            <div class="inline-block bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 rounded-full text-[10px] font-bold text-amber-400 tracking-widest uppercase mb-1">
+                ⚔️ NINJA VOCAB SLASH
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500 mb-0.5 drop-shadow-[0_0_15px_rgba(217,119,6,0.8)] tracking-wider">
+                นินจาศัพท์จีน
+            </h1>
+            <p class="text-stone-400 mb-4 text-xs font-medium">ตวัดดาบฟันอักษรจีนให้ตรงกับคำแปลภาษาไทยด้านบน</p>
+
+            <!-- เลือกหมวดหมู่ -->
+            <div class="mb-4 text-left">
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-amber-400 text-[11px] font-black uppercase tracking-widest flex items-center gap-1">
+                        📜 เลือกหมวดหมู่คำศัพท์
+                    </label>
+                    <span class="text-[9px] text-stone-500 font-bold">เลือก 1 หมวด</span>
+                </div>
+
+                <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 snap-x snap-mandatory">
+                    <!-- 1. ผลไม้สด -->
+                    <div data-cat="fruit" class="cat-card bg-stone-900/90 border-2 border-stone-800 hover:border-amber-600/60 rounded-2xl p-3 min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer transition-all duration-200 snap-center group card-glow-selected">
+                        <div class="text-2xl mb-1">🍎</div>
+                        <h3 class="text-xs font-black text-amber-300">ผลไม้สด</h3>
+                        <span class="text-[8px] text-stone-400 block font-semibold mb-1">新鲜水果</span>
+                        <p class="text-[9px] text-stone-400 leading-tight line-clamp-2">แอปเปิ้ล กล้วย แตงโม สตรอว์เบอร์รี่ ส้ม องุ่น</p>
+                    </div>
+
+                    <!-- 2. ผักสด -->
+                    <div data-cat="veg" class="cat-card bg-stone-900/90 border-2 border-stone-800 hover:border-amber-600/60 rounded-2xl p-3 min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer transition-all duration-200 snap-center group">
+                        <div class="text-2xl mb-1">🥦</div>
+                        <h3 class="text-xs font-black text-stone-200 group-hover:text-amber-300">ผักสด</h3>
+                        <span class="text-[8px] text-stone-400 block font-semibold mb-1">新鲜蔬菜</span>
+                        <p class="text-[9px] text-stone-400 leading-tight line-clamp-2">บรอกโคลี แครอท มะเขือเทศ กะหล่ำปลี แตงกวา</p>
+                    </div>
+
+                    <!-- 3. เนื้อสัตว์ -->
+                    <div data-cat="meat" class="cat-card bg-stone-900/90 border-2 border-stone-800 hover:border-amber-600/60 rounded-2xl p-3 min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer transition-all duration-200 snap-center group">
+                        <div class="text-2xl mb-1">🥩</div>
+                        <h3 class="text-xs font-black text-stone-200 group-hover:text-amber-300">เนื้อสัตว์</h3>
+                        <span class="text-[8px] text-stone-400 block font-semibold mb-1">肉类与家禽</span>
+                        <p class="text-[9px] text-stone-400 leading-tight line-clamp-2">เนื้อวัว หมู ไก่ย่าง เป็ดย่าง ไส้กรอก ปลา</p>
+                    </div>
+
+                    <!-- 4. เมนูปรุงสุก -->
+                    <div data-cat="dish" class="cat-card bg-stone-900/90 border-2 border-stone-800 hover:border-amber-600/60 rounded-2xl p-3 min-w-[140px] max-w-[140px] flex-shrink-0 cursor-pointer transition-all duration-200 snap-center group">
+                        <div class="text-2xl mb-1">🍳</div>
+                        <h3 class="text-xs font-black text-stone-200 group-hover:text-amber-300">เมนูปรุงสุก</h3>
+                        <span class="text-[8px] text-stone-400 block font-semibold mb-1">熟食与主食</span>
+                        <p class="text-[9px] text-stone-400 leading-tight line-clamp-2">ไข่ดาว ข้าวสวย สเต็ก พิซซ่า ซูชิ เบอร์เกอร์</p>
+                    </div>
+                </div>
             </div>
 
-            <button id="restart-btn" class="w-full bg-gradient-to-r from-amber-600 via-red-600 to-amber-700 hover:from-amber-700 hover:to-red-800 text-white font-extrabold py-4 px-6 rounded-xl text-xl shadow-[0_0_20px_rgba(217,119,6,0.5)] transform active:scale-95 transition-all pointer-events-auto tracking-wide">
+            <!-- เลือกระดับความยาก & สนามประลอง -->
+            <div class="mb-5 text-left">
+                <label class="text-amber-400 text-[11px] font-black uppercase tracking-widest block mb-1.5">
+                    ⚡ ระดับความยาก & สนามประลองยุทธ์
+                </label>
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" data-diff="easy" class="diff-btn bg-amber-600 border border-amber-500 py-2 rounded-xl text-xs font-bold text-white shadow-lg transition transform active:scale-95">
+                        <span class="block text-xs font-black">ง่าย</span>
+                        <span class="text-[8px] text-amber-200 font-semibold block">⛩️ โรงฝึกไม้</span>
+                    </button>
+                    <button type="button" data-diff="normal" class="diff-btn bg-stone-900 border border-stone-800 py-2 rounded-xl text-xs font-bold hover:bg-amber-600/30 transition text-stone-300 transform active:scale-95">
+                        <span class="block text-xs font-black">ปานกลาง</span>
+                        <span class="text-[8px] text-stone-400 font-semibold block">🌸 วัดซากุระ</span>
+                    </button>
+                    <button type="button" data-diff="hard" class="diff-btn bg-stone-900 border border-stone-800 py-2 rounded-xl text-xs font-bold hover:bg-amber-600/30 transition text-stone-300 transform active:scale-95">
+                        <span class="block text-xs font-black">ยาก</span>
+                        <span class="text-[8px] text-stone-400 font-semibold block">🌋 ภูเขาไฟ</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="start-game-btn" class="w-full bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-700 hover:from-amber-500 hover:to-yellow-500 text-stone-950 font-black py-3 px-4 rounded-xl text-lg shadow-[0_0_20px_rgba(217,119,6,0.6)] transform active:scale-95 transition-all pointer-events-auto tracking-wider uppercase border border-yellow-300/50">
+                ชักดาบประลองยุทธ์ ⚔️
+            </button>
+        </div>
+    </div>
+
+    <!-- หน้าต่าง Game Over -->
+    <div id="game-over-modal" class="absolute inset-0 bg-black/95 backdrop-blur-xl z-40 flex flex-col justify-center items-center text-white hidden p-4">
+        <div class="bg-stone-900 border-2 border-red-600/80 rounded-3xl p-6 max-w-sm w-full text-center shadow-[0_0_50px_rgba(220,38,38,0.5)] relative overflow-hidden">
+            <h1 id="game-over-title" class="text-3xl font-black text-red-500 mb-1 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] tracking-wider">ภารกิจล้มเหลว</h1>
+            <p id="game-over-reason" class="text-stone-300 mb-4 text-xs font-medium">พลังชีวิตของคุณหมดลงแล้ว</p>
+
+            <div class="bg-stone-800/80 rounded-2xl p-3 mb-4 border border-stone-700/80 shadow-inner">
+                <div class="text-stone-400 text-xs font-bold uppercase tracking-widest">คะแนนรวมทั้งหมด</div>
+                <div id="final-score" class="text-4xl font-black text-amber-400 my-0.5 text-glow">0</div>
+            </div>
+
+            <button id="restart-btn" class="w-full bg-gradient-to-r from-amber-600 via-red-600 to-amber-700 text-white font-extrabold py-3 px-6 rounded-xl text-lg shadow-[0_0_20px_rgba(217,119,6,0.5)] transform active:scale-95 transition-all pointer-events-auto tracking-wide">
                 เล่นใหม่อีกครั้ง 🔄
             </button>
         </div>
     </div>
 
-    <!-- Canvas สำหรับวาดเกม -->
     <canvas id="gameCanvas" class="w-full h-full"></canvas>
 
     <script>
-        // --- 1. คลังคำศัพท์ภาษาจีน-ไทย ---
         const vocabularyDB = [
-            { cn: "苹果", pinyin: "píngguǒ", th: "แอปเปิ้ล" },
-            { cn: "香蕉", pinyin: "xiāngjiāo", th: "กล้วย" },
-            { cn: "猫", pinyin: "māo", th: "แมว" },
-            { cn: "狗", pinyin: "gǒu", th: "สุนัข" },
-            { cn: "水", pinyin: "shuǐ", th: "น้ำ" },
-            { cn: "火", pinyin: "huǒ", th: "ไฟ" },
-            { cn: "书", pinyin: "shū", th: "หนังสือ" },
-            { cn: "学校", pinyin: "xuéxiào", th: "โรงเรียน" },
-            { cn: "老师", pinyin: "lǎoshī", th: "ครู" },
-            { cn: "学生", pinyin: "xuésheng", th: "นักเรียน" },
-            { cn: "朋友", pinyin: "péngyou", th: "เพื่อน" },
-            { cn: "飞机", pinyin: "fēijī", th: "เครื่องบิน" },
-            { cn: "汽车", pinyin: "qìchē", th: "รถยนต์" },
-            { cn: "太阳", pinyin: "tàiyáng", th: "พระอาทิตย์" },
-            { cn: "月亮", pinyin: "yuèliang", th: "พระจันทร์" },
-            { cn: "牛奶", pinyin: "niúnǎi", th: "นมสด" },
-            { cn: "面包", pinyin: "miànbāo", th: "ขนมปัง" },
-            { cn: "中国", pinyin: "zhōngguó", th: "ประเทศจีน" },
-            { cn: "泰国", pinyin: "tàiguó", th: "ประเทศไทย" },
-            { cn: "爱", pinyin: "ài", th: "รัก" },
-            { cn: "开心", pinyin: "kāixīn", th: "มีความสุข" },
-            { cn: "医生", pinyin: "yīshēng", th: "หมอ" },
-            { cn: "手机", pinyin: "shǒujī", th: "โทรศัพท์มือถือ" },
-            { cn: "电脑", pinyin: "diànnǎo", th: "คอมพิวเตอร์" },
-            { cn: "钱", pinyin: "qián", th: "เงิน" }
+            // Fruit
+            { cn: "苹果", pinyin: "píngguǒ", th: "แอปเปิ้ล", cat: "fruit", color: "#dc2626" },
+            { cn: "香蕉", pinyin: "xiāngjiāo", th: "กล้วย", cat: "fruit", color: "#eab308" },
+            { cn: "西瓜", pinyin: "xīguā", th: "แตงโม", cat: "fruit", color: "#16a34a" },
+            { cn: "草莓", pinyin: "cǎoméi", th: "สตรอว์เบอร์รี่", cat: "fruit", color: "#e11d48" },
+            { cn: "橘子", pinyin: "júzi", th: "ส้ม", cat: "fruit", color: "#f97316" },
+            { cn: "葡萄", pinyin: "pútao", th: "องุ่น", cat: "fruit", color: "#9333ea" },
+
+            // Veg
+            { cn: "西蓝花", pinyin: "xīlánhuā", th: "บรอกโคลี", cat: "veg", color: "#15803d" },
+            { cn: "胡萝卜", pinyin: "húluóbo", th: "แครอท", cat: "veg", color: "#ea580c" },
+            { cn: "西红柿", pinyin: "xīhóngshì", th: "มะเขือเทศ", cat: "veg", color: "#ef4444" },
+            { cn: "白菜", pinyin: "báicài", th: "กะหล่ำปลี", cat: "veg", color: "#22c55e" },
+            { cn: "黄瓜", pinyin: "huángguā", th: "แตงกวา", cat: "veg", color: "#16a34a" },
+            { cn: "大蒜", pinyin: "dàsuàn", th: "กระเทียม", cat: "veg", color: "#f8fafc" },
+
+            // Meat
+            { cn: "牛肉", pinyin: "niúròu", th: "เนื้อวัว", cat: "meat", color: "#991b1b" },
+            { cn: "猪肉", pinyin: "zhūròu", th: "เนื้อหมู", cat: "meat", color: "#f43f5e" },
+            { cn: "烤鸡", pinyin: "kǎojī", th: "ไก่ย่าง", cat: "meat", color: "#d97706" },
+            { cn: "烤鸭", pinyin: "kǎoyā", th: "เป็ดย่าง", cat: "meat", color: "#b45309" },
+            { cn: "香肠", pinyin: "xiāngcháng", th: "ไส้กรอก", cat: "meat", color: "#e11d48" },
+            { cn: "鱼肉", pinyin: "yúròu", th: "เนื้อปลา", cat: "meat", color: "#38bdf8" },
+
+            // Dish
+            { cn: "煎蛋", pinyin: "jiāndàn", th: "ไข่ดาว", cat: "dish", color: "#f59e0b" },
+            { cn: "米饭", pinyin: "mǐfàn", th: "ข้าวสวย", cat: "dish", color: "#f8fafc" },
+            { cn: "牛排", pinyin: "niúpái", th: "สเต็กเนื้อ", cat: "dish", color: "#78350f" },
+            { cn: "比萨饼", pinyin: "bǐsàbǐng", th: "พิซซ่า", cat: "dish", color: "#eab308" },
+            { cn: "寿司", pinyin: "shòusī", th: "ซูชิ", cat: "dish", color: "#ef4444" },
+            { cn: "汉堡包", pinyin: "hànbǎobāo", th: "แฮมเบอร์เกอร์", cat: "dish", color: "#d97706" }
         ];
 
-        // ชนิดผลไม้หลากสีสัน (ปรับโทนสีให้นุ่มลึก ไม่สว่างจ้าเกินไป)
-        const FRUIT_TYPES = [
-            { name: 'watermelon', bg: '#14532d', inner: '#f87171', border: '#052e16', pColor: '#dc2626' },
-            { name: 'orange', bg: '#c2410c', inner: '#ffedd5', border: '#7c2d12', pColor: '#ea580c' },
-            { name: 'apple', bg: '#991b1b', inner: '#fef3c7', border: '#450a0a', pColor: '#dc2626' },
-            { name: 'strawberry', bg: '#9f1239', inner: '#fecdd3', border: '#4c0519', pColor: '#e11d48' },
-            { name: 'lemon', bg: '#ca8a04', inner: '#fef9c3', border: '#713f12', pColor: '#eab308' },
-            { name: 'blueberry', bg: '#1d4ed8', inner: '#dbeafe', border: '#1e3a8a', pColor: '#2563eb' },
-            { name: 'dragonfruit', bg: '#9d174d', inner: '#f1f5f9', border: '#500724', pColor: '#db2777' },
-            { name: 'kiwi', bg: '#4d7c0f', inner: '#ecfccb', border: '#1a2e05', pColor: '#65a30d' }
-        ];
+        const SHAPES_BY_CAT = {
+            fruit: ['apple', 'banana', 'watermelon', 'strawberry', 'orange', 'grape'],
+            veg: ['broccoli', 'carrot', 'tomato', 'cabbage', 'cucumber', 'garlic'],
+            meat: ['steak', 'pork', 'chicken', 'duck', 'sausage', 'fish'],
+            dish: ['egg', 'rice', 'steak_dish', 'pizza', 'sushi', 'burger']
+        };
 
-        // --- 2. ระบบ Web Audio API สำหรับเอฟเฟกต์เสียง ---
-        class SoundFX {
-            constructor() {
-                this.ctx = null;
-            }
-            init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-            }
-            playSlice() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(1400, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(180, this.ctx.currentTime + 0.09);
-                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.09);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.09);
-            }
-            playHit() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(450, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(900, this.ctx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.55, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.15);
-            }
-            playBomb() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.linearRampToValueAtTime(25, this.ctx.currentTime + 0.55);
-                gain.gain.setValueAtTime(0.85, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.55);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.55);
-            }
-            playWrong() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(240, this.ctx.currentTime);
-                osc.frequency.setValueAtTime(130, this.ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.25);
-            }
-        }
-
-        const soundFX = new SoundFX();
-
-        // --- 3. การตั้งค่า Canvas และ ตัวแปรหลัก ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -210,51 +294,59 @@
         resizeCanvas();
 
         let score = 0;
+        let comboStreak = 0;
         let lives = 5;
         let isGameOver = false;
-        
-        let currentWordSet = [];
-        let currentTarget = null;
-        let currentSetIndex = 0;
+        let isPaused = false;
 
-        const TARGET_TIME_LIMIT = 15;
-        let wordTimer = TARGET_TIME_LIMIT;
+        // ตัวแปรสำหรับ Multi-slice Combo ใน 1 สโตรกดาบ
+        let strokeSliceCount = 0;
+        let strokeCorrectCount = 0;
+
+        let selectedCategory = 'fruit';
+        let difficultyLevel = 'easy';
+
+        // ระบบเป้าหมายคำศัพท์ไทย (12 วินาที)
+        let currentTarget = null;
+        let targetTimer = 12.0;
+        const TARGET_TIME_LIMIT = 12.0;
+
+        let freezeTimer = 0;
+        let activeVocabList = [];
         let lastTimestamp = 0;
+        let animFrameCount = 0;
 
         let items = [];
-        let fruitHalves = [];
+        let objectHalves = [];
         let particles = [];
         let slashMarks = [];
         let shockwaves = [];
         let floatingTexts = [];
         let bgEmbers = [];
+        let sakuraPetals = [];
+        let snowFlakes = [];
         
         let slicePath = [];
         let isSlicing = false;
-
         let spawnTimer = 0;
-        let nextSpawnInterval = 50; // ปรับเพิ่มความถี่ขึ้นเล็กน้อย
-
+        let nextSpawnInterval = 45;
         let lastSpawnX = null;
         let targetSpawnCounter = 0;
-
         let lastDamageTime = 0;
         const DAMAGE_COOLDOWN = 500;
-
         let shakeTime = 0;
         let shakeMagnitude = 0;
 
-        function triggerScreenShake(magnitude = 10, duration = 12) {
+        function triggerScreenShake(magnitude = 12, duration = 14) {
             shakeMagnitude = magnitude;
             shakeTime = duration;
         }
 
-        // --- 4. คลาสสร้างวัตถุ ---
         class Item {
-            constructor(wordObj = null, isBomb = false, forcedX = null) {
+            constructor(wordObj = null, isBomb = false, isFreeze = false, forcedX = null, shapeId = null) {
                 this.radius = Math.min(width, height) * 0.095;
-                if (this.radius < 60) this.radius = 60;
-                if (this.radius > 85) this.radius = 85;
+                if (this.radius < 55) this.radius = 55;
+                if (this.radius > 75) this.radius = 75;
 
                 if (forcedX !== null) {
                     this.x = forcedX;
@@ -266,47 +358,37 @@
                         newX = Math.random() * (width - 200) + 100;
                         attempts++;
                     } while (lastSpawnX !== null && Math.abs(newX - lastSpawnX) < minDistance && attempts < 10);
-                    
                     this.x = newX;
                 }
                 lastSpawnX = this.x;
 
                 this.y = height + this.radius;
-
-                const speedBoost = Math.min(score * 0.05, 3.0);
+                const speedBoost = Math.min(score * 0.03, 2.5);
                 const speedMult = height / 800;
-
                 const centerOffset = (this.x - width / 2) / (width / 2);
                 this.vx = -centerOffset * (Math.random() * 2.5 + 1.2) + (Math.random() - 0.5) * 2;
                 
-                // สุ่มความสูงหลากหลายระดับ
                 const launchTier = Math.random();
-                let baseSpeed;
-                if (launchTier < 0.3) {
-                    baseSpeed = Math.random() * 2.5 + 9.5;
-                } else if (launchTier < 0.7) {
-                    baseSpeed = Math.random() * 2.0 + 12.0;
-                } else {
-                    baseSpeed = Math.random() * 2.5 + 14.5;
-                }
+                let baseSpeed = launchTier < 0.3 ? (Math.random() * 2.5 + 9.5) : (launchTier < 0.7 ? (Math.random() * 2.0 + 12.0) : (Math.random() * 2.5 + 14.5));
 
                 this.vy = -(baseSpeed + speedBoost) * speedMult;
                 this.gravity = (Math.random() * 0.04 + 0.22) * speedMult;
-
                 this.rotation = (Math.random() - 0.5) * 0.3; 
                 this.vRot = (Math.random() - 0.5) * 0.03;
 
                 this.isBomb = isBomb;
+                this.isFreeze = isFreeze;
                 this.wordObj = wordObj;
-                this.fruitType = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
+                this.shapeId = shapeId || 'apple';
                 this.isSliced = false;
             }
 
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += this.gravity;
-                this.rotation += this.vRot;
+                const speedFactor = freezeTimer > 0 ? 0.35 : 1.0;
+                this.x += this.vx * speedFactor;
+                this.y += this.vy * speedFactor;
+                this.vy += this.gravity * speedFactor;
+                this.rotation += this.vRot * speedFactor;
             }
 
             draw() {
@@ -314,463 +396,680 @@
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
 
+                const r = this.radius;
+
                 if (this.isBomb) {
-                    ctx.shadowColor = '#dc2626';
-                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = '#dc2626'; ctx.shadowBlur = 18;
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+                    ctx.fillStyle = '#18181b'; ctx.fill();
+                    ctx.lineWidth = 4; ctx.strokeStyle = '#ef4444'; ctx.stroke();
 
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = '#18181b';
-                    ctx.fill();
-                    ctx.lineWidth = 3.5;
-                    ctx.strokeStyle = '#dc2626';
-                    ctx.stroke();
+                    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(0, -r * 0.85); ctx.quadraticCurveTo(r * 0.3, -r * 1.2, 0, -r * 1.3); ctx.stroke();
+                    ctx.fillStyle = '#fef08a'; ctx.beginPath(); ctx.arc(0, -r * 1.3, 6, 0, Math.PI * 2); ctx.fill();
 
-                    // ชนวน
-                    ctx.beginPath();
-                    ctx.moveTo(0, -this.radius);
-                    ctx.quadraticCurveTo(10, -this.radius - 15, 15, -this.radius - 20);
-                    ctx.lineWidth = 3;
-                    ctx.strokeStyle = '#b45309';
-                    ctx.stroke();
+                    ctx.fillStyle = '#f87171'; ctx.font = `bold ${r * 0.75}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('💣', 0, 4);
+                } else if (this.isFreeze) {
+                    ctx.shadowColor = '#06b6d4'; ctx.shadowBlur = 20;
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+                    ctx.fillStyle = '#0891b2'; ctx.fill();
+                    ctx.lineWidth = 4; ctx.strokeStyle = '#67e8f9'; ctx.stroke();
 
-                    // ประกายไฟ
-                    ctx.beginPath();
-                    ctx.arc(15, -this.radius - 20, 6, 0, Math.PI * 2);
-                    ctx.fillStyle = '#d97706';
-                    ctx.fill();
-
-                    ctx.fillStyle = '#ef4444';
-                    ctx.font = `bold ${this.radius * 0.85}px sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText('💣', 0, 2);
+                    ctx.fillStyle = '#0284c7'; ctx.font = `bold ${r * 0.8}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('❄️', 0, 2);
                 } else {
-                    const ft = this.fruitType;
+                    const word = this.wordObj;
+                    ctx.shadowColor = word.color || '#f59e0b'; ctx.shadowBlur = 14;
 
-                    // ปรับเงาให้นุ่มพอดี ไม่ฟุ้งสว่างจ้า
-                    ctx.shadowColor = ft.pColor;
-                    ctx.shadowBlur = 10;
+                    drawShapeByVocabId(ctx, this.shapeId, r);
 
-                    // เปลือกผลไม้
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = ft.bg;
-                    ctx.fill();
-                    ctx.lineWidth = 3.5;
-                    ctx.strokeStyle = ft.border;
-                    ctx.stroke();
-
-                    // เนื้อในผลไม้
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius * 0.86, 0, Math.PI * 2);
-                    ctx.fillStyle = ft.inner;
-                    ctx.fill();
-
-                    // ใบไม้ขั้ว
-                    ctx.beginPath();
-                    ctx.ellipse(0, -this.radius * 0.92, this.radius * 0.32, this.radius * 0.16, Math.PI / 4, 0, Math.PI * 2);
-                    ctx.fillStyle = '#15803d';
-                    ctx.fill();
-
-                    // แถบป้ายสว่างตรงกลาง (ลดความจ้าลงเล็กน้อย)
-                    ctx.beginPath();
-                    ctx.arc(0, 0, this.radius * 0.72, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(248, 250, 252, 0.88)';
-                    ctx.fill();
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.18)';
-                    ctx.stroke();
-
-                    // พินอิน
                     ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#334155';
-                    ctx.font = `bold ${this.radius * 0.28}px sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.36);
+                    ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') {
+                        ctx.roundRect(-r * 0.72, -r * 0.42, r * 1.44, r * 0.84, 10);
+                    } else {
+                        ctx.rect(-r * 0.72, -r * 0.42, r * 1.44, r * 0.84);
+                    }
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+                    ctx.lineWidth = 1.5; ctx.stroke();
 
-                    // อักษรจีน
-                    ctx.fillStyle = '#0f172a';
-                    ctx.font = `bold ${this.radius * 0.58}px "PingFang SC", "Microsoft YaHei", sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(this.wordObj.cn, 0, this.radius * 0.12);
+                    ctx.fillStyle = '#fef08a';
+                    ctx.font = `bold ${r * 0.24}px sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(word.pinyin, 0, -r * 0.16);
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${r * 0.42}px "PingFang SC", "Microsoft YaHei", sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(word.cn, 0, r * 0.18);
                 }
-
                 ctx.restore();
             }
         }
 
-        // --- 5. คลาสสำหรับผลไม้ซีก ---
-        class FruitHalf {
-            constructor(x, y, radius, fruitType, isLeft, sliceAngle) {
-                this.x = x;
-                this.y = y;
-                this.radius = radius;
-                this.fruitType = fruitType;
-                this.isLeft = isLeft;
-                this.rotation = sliceAngle;
+        function drawShapeByVocabId(ctx, id, r) {
+            switch (id) {
+                case 'apple':
+                    ctx.fillStyle = '#dc2626';
+                    ctx.beginPath();
+                    ctx.arc(-r * 0.25, -r * 0.1, r * 0.55, 0, Math.PI * 2);
+                    ctx.arc(r * 0.25, -r * 0.1, r * 0.55, 0, Math.PI * 2);
+                    ctx.arc(0, r * 0.2, r * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(0, -r * 0.5); ctx.lineTo(r * 0.1, -r * 0.85); ctx.stroke();
+                    ctx.fillStyle = '#22c55e';
+                    ctx.beginPath(); ctx.ellipse(r * 0.2, -r * 0.75, 12, 6, Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+                    break;
 
+                case 'banana':
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r * 0.8, 0.2, Math.PI - 0.2);
+                    ctx.lineWidth = r * 0.45; ctx.strokeStyle = '#facc15'; ctx.lineCap = 'round'; ctx.stroke();
+                    break;
+
+                case 'watermelon':
+                    ctx.fillStyle = '#16a34a';
+                    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.85, r * 0.7, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#052e16'; ctx.lineWidth = 6;
+                    ctx.beginPath();
+                    ctx.moveTo(-r * 0.6, -r * 0.4); ctx.quadraticCurveTo(0, -r * 0.2, r * 0.6, -r * 0.4);
+                    ctx.moveTo(-r * 0.7, 0); ctx.quadraticCurveTo(0, r * 0.1, r * 0.7, 0);
+                    ctx.moveTo(-r * 0.6, r * 0.4); ctx.quadraticCurveTo(0, r * 0.3, r * 0.6, r * 0.4);
+                    ctx.stroke();
+                    break;
+
+                case 'strawberry':
+                    ctx.fillStyle = '#e11d48';
+                    ctx.beginPath();
+                    ctx.moveTo(0, r * 0.85);
+                    ctx.quadraticCurveTo(-r * 0.9, 0, -r * 0.5, -r * 0.5);
+                    ctx.quadraticCurveTo(0, -r * 0.7, r * 0.5, -r * 0.5);
+                    ctx.quadraticCurveTo(r * 0.9, 0, 0, r * 0.85); ctx.fill();
+                    ctx.fillStyle = '#22c55e';
+                    ctx.beginPath(); ctx.arc(0, -r * 0.55, 18, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'orange':
+                    ctx.fillStyle = '#f97316';
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#15803d';
+                    ctx.beginPath(); ctx.ellipse(r * 0.15, -r * 0.75, 10, 5, -Math.PI / 4, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'grape':
+                    ctx.fillStyle = '#9333ea';
+                    const coords = [[-15,-15], [15,-15], [0,-25], [-25,10], [0,5], [25,10], [-12,30], [12,30], [0,48]];
+                    coords.forEach(([gx, gy]) => {
+                        ctx.beginPath(); ctx.arc(gx, gy - 10, 16, 0, Math.PI * 2); ctx.fill();
+                    });
+                    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.moveTo(0, -r * 0.6); ctx.lineTo(0, -r * 0.85); ctx.stroke();
+                    break;
+
+                case 'broccoli':
+                    ctx.fillStyle = '#86efac'; ctx.fillRect(-14, 0, 28, r * 0.75);
+                    ctx.fillStyle = '#15803d';
+                    ctx.beginPath(); ctx.arc(-20, -15, 24, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(20, -15, 24, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(0, -35, 28, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'carrot':
+                    ctx.fillStyle = '#ea580c';
+                    ctx.beginPath(); ctx.moveTo(0, r * 0.9); ctx.lineTo(-r * 0.5, -r * 0.5); ctx.lineTo(r * 0.5, -r * 0.5); ctx.closePath(); ctx.fill();
+                    ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, -r * 0.5); ctx.lineTo(-15, -r * 0.85);
+                    ctx.moveTo(0, -r * 0.5); ctx.lineTo(0, -r * 0.9);
+                    ctx.moveTo(0, -r * 0.5); ctx.lineTo(15, -r * 0.85); ctx.stroke();
+                    break;
+
+                case 'tomato':
+                    ctx.fillStyle = '#ef4444'; ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(0, -r * 0.7, 12, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'cabbage':
+                    ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#86efac'; ctx.lineWidth = 4;
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, Math.PI); ctx.stroke();
+                    break;
+
+                case 'cucumber':
+                    ctx.fillStyle = '#16a34a';
+                    ctx.save(); ctx.rotate(Math.PI / 4);
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.35, -r * 0.8, r * 0.7, r * 1.6, 12);
+                    else ctx.rect(-r * 0.35, -r * 0.8, r * 0.7, r * 1.6);
+                    ctx.fill(); ctx.restore();
+                    break;
+
+                case 'garlic':
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath(); ctx.arc(0, 10, r * 0.65, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(0, -r * 0.7); ctx.lineTo(-20, 10); ctx.lineTo(20, 10); ctx.closePath(); ctx.fill();
+                    break;
+
+                case 'steak':
+                    ctx.fillStyle = '#991b1b';
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.75, -r * 0.5, r * 1.5, r * 1.0, 18);
+                    else ctx.rect(-r * 0.75, -r * 0.5, r * 1.5, r * 1.0);
+                    ctx.fill();
+                    ctx.strokeStyle = '#fca5a5'; ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(-r * 0.4, -r * 0.2); ctx.lineTo(r * 0.4, r * 0.2); ctx.stroke();
+                    break;
+
+                case 'pork':
+                    ctx.fillStyle = '#f43f5e';
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.7, -r * 0.5, r * 1.4, r * 1.0, 15);
+                    else ctx.rect(-r * 0.7, -r * 0.5, r * 1.4, r * 1.0);
+                    ctx.fill();
+                    ctx.fillStyle = '#fecdd3'; ctx.fillRect(-r * 0.7, -r * 0.5, r * 1.4, 8);
+                    break;
+
+                case 'chicken':
+                    ctx.fillStyle = '#d97706';
+                    ctx.beginPath(); ctx.arc(-10, -10, r * 0.55, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#f8fafc'; ctx.fillRect(10, 10, 30, 12);
+                    ctx.beginPath(); ctx.arc(42, 10, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(42, 22, 8, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'duck':
+                    ctx.fillStyle = '#b45309';
+                    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.75, r * 0.55, -Math.PI / 6, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'sausage':
+                    ctx.fillStyle = '#e11d48';
+                    ctx.save(); ctx.rotate(-Math.PI / 6);
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.75, -r * 0.3, r * 1.5, r * 0.6, 18);
+                    else ctx.rect(-r * 0.75, -r * 0.3, r * 1.5, r * 0.6);
+                    ctx.fill(); ctx.restore();
+                    break;
+
+                case 'fish':
+                    ctx.fillStyle = '#38bdf8';
+                    ctx.beginPath(); ctx.ellipse(-10, 0, r * 0.6, r * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(r * 0.3, 0); ctx.lineTo(r * 0.7, -r * 0.4); ctx.lineTo(r * 0.7, r * 0.4); ctx.closePath(); ctx.fill();
+                    break;
+
+                case 'egg':
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.8, r * 0.65, Math.PI / 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath(); ctx.arc(-5, -5, r * 0.35, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'rice':
+                    ctx.fillStyle = '#2563eb';
+                    ctx.beginPath(); ctx.arc(0, 10, r * 0.6, 0, Math.PI); ctx.fill();
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath(); ctx.arc(0, 5, r * 0.58, Math.PI, 0); ctx.fill();
+                    break;
+
+                case 'steak_dish':
+                    ctx.fillStyle = '#475569';
+                    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.85, r * 0.65, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#78350f';
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.5, -r * 0.3, r * 1.0, r * 0.6, 8);
+                    else ctx.rect(-r * 0.5, -r * 0.3, r * 1.0, r * 0.6);
+                    ctx.fill();
+                    break;
+
+                case 'pizza':
+                    ctx.fillStyle = '#eab308';
+                    ctx.beginPath(); ctx.moveTo(0, r * 0.8); ctx.lineTo(-r * 0.65, -r * 0.6); ctx.lineTo(r * 0.65, -r * 0.6); ctx.closePath(); ctx.fill();
+                    ctx.fillStyle = '#b45309'; ctx.fillRect(-r * 0.68, -r * 0.75, r * 1.36, 12);
+                    ctx.fillStyle = '#dc2626'; ctx.beginPath(); ctx.arc(-10, -10, 8, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(10, 15, 8, 0, Math.PI * 2); ctx.fill();
+                    break;
+
+                case 'sushi':
+                    ctx.fillStyle = '#f8fafc';
+                    ctx.beginPath();
+                    if (typeof ctx.roundRect === 'function') ctx.roundRect(-r * 0.6, -r * 0.4, r * 1.2, r * 0.8, 8);
+                    else ctx.rect(-r * 0.6, -r * 0.4, r * 1.2, r * 0.8);
+                    ctx.fill();
+                    ctx.fillStyle = '#f97316'; ctx.fillRect(-r * 0.6, -r * 0.4, r * 1.2, r * 0.35);
+                    ctx.fillStyle = '#18181b'; ctx.fillRect(-r * 0.2, -r * 0.4, r * 0.4, r * 0.8);
+                    break;
+
+                case 'burger':
+                    ctx.fillStyle = '#d97706'; ctx.beginPath(); ctx.arc(0, -5, r * 0.6, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#15803d'; ctx.fillRect(-r * 0.6, -5, r * 1.2, 6);
+                    ctx.fillStyle = '#78350f'; ctx.fillRect(-r * 0.55, 1, r * 1.1, 10);
+                    ctx.fillStyle = '#d97706'; ctx.fillRect(-r * 0.55, 11, r * 1.1, 8);
+                    break;
+
+                default:
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath(); ctx.arc(0, 0, r * 0.75, 0, Math.PI * 2); ctx.fill();
+                    break;
+            }
+        }
+
+        class ObjectHalf {
+            constructor(x, y, radius, color, isLeft, sliceAngle) {
+                this.x = x; this.y = y; this.radius = radius;
+                this.color = color || '#f59e0b'; this.isLeft = isLeft; this.rotation = sliceAngle;
                 const pushDir = isLeft ? -1 : 1;
                 this.vx = pushDir * (Math.random() * 5 + 4);
                 this.vy = -(Math.random() * 4 + 2);
                 this.vRot = pushDir * (Math.random() * 0.18 + 0.1);
-                this.gravity = 0.4;
-                this.alpha = 1;
+                this.gravity = 0.4; this.alpha = 1;
             }
-
             update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += this.gravity;
-                this.rotation += this.vRot;
-                this.alpha -= 0.018;
+                this.x += this.vx; this.y += this.vy;
+                this.vy += this.gravity; this.rotation += this.vRot; this.alpha -= 0.018;
             }
-
             draw() {
                 ctx.save();
                 ctx.globalAlpha = Math.max(0, this.alpha);
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
-
-                const ft = this.fruitType;
-                ctx.shadowColor = ft.pColor;
-                ctx.shadowBlur = 8;
-
                 ctx.beginPath();
-                if (this.isLeft) {
-                    ctx.arc(0, 0, this.radius, Math.PI * 0.5, Math.PI * 1.5);
-                } else {
-                    ctx.arc(0, 0, this.radius, Math.PI * 1.5, Math.PI * 0.5);
-                }
+                if (this.isLeft) ctx.arc(0, 0, this.radius, Math.PI * 0.5, Math.PI * 1.5);
+                else ctx.arc(0, 0, this.radius, Math.PI * 1.5, Math.PI * 0.5);
                 ctx.closePath();
-                ctx.fillStyle = ft.bg;
-                ctx.fill();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = ft.border;
-                ctx.stroke();
-
-                ctx.beginPath();
-                if (this.isLeft) {
-                    ctx.arc(0, 0, this.radius * 0.8, Math.PI * 0.5, Math.PI * 1.5);
-                } else {
-                    ctx.arc(0, 0, this.radius * 0.8, Math.PI * 1.5, Math.PI * 0.5);
-                }
-                ctx.fillStyle = ft.inner;
-                ctx.fill();
-
-                // เส้นขอบตรงรอยตัด
-                ctx.beginPath();
-                ctx.moveTo(0, -this.radius);
-                ctx.lineTo(0, this.radius);
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#f8fafc';
-                ctx.stroke();
-
+                ctx.fillStyle = this.color; ctx.fill();
+                ctx.lineWidth = 3; ctx.strokeStyle = '#ffffff'; ctx.stroke();
                 ctx.restore();
             }
         }
 
-        // --- 6. คลาสสำหรับอนุภาคประกายไฟนินจา ---
         class Particle {
             constructor(x, y, color, isSpark = false) {
-                this.x = x;
-                this.y = y;
-                this.isSpark = isSpark;
-                this.radius = isSpark ? Math.random() * 3 + 1 : Math.random() * 6 + 2.5;
-                
-                const speed = isSpark ? (Math.random() * 18 + 6) : (Math.random() * 12 + 4);
+                this.x = x; this.y = y; this.isSpark = isSpark;
+                this.radius = isSpark ? Math.random() * 4.2 + 1.8 : Math.random() * 6.5 + 2.5;
+                const speed = isSpark ? (Math.random() * 24 + 10) : (Math.random() * 12 + 4);
                 const angle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(angle) * speed;
-                this.vy = Math.sin(angle) * speed;
-                
-                this.gravity = isSpark ? 0.08 : 0.28;
-                this.alpha = 1;
-                this.color = color;
+                this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                this.gravity = isSpark ? 0.08 : 0.28; this.alpha = 1; this.color = color;
                 this.decay = isSpark ? (Math.random() * 0.045 + 0.03) : (Math.random() * 0.025 + 0.015);
             }
-
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.vy += this.gravity;
-                this.alpha -= this.decay;
-            }
-
+            update() { this.x += this.vx; this.y += this.vy; this.vy += this.gravity; this.alpha -= this.decay; }
             draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.alpha);
-                if (this.isSpark) {
-                    ctx.shadowColor = this.color;
-                    ctx.shadowBlur = 8;
-                }
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.restore();
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
             }
         }
 
-        // --- 7. คลาสสำหรับประกายไฟหมอกควันพื้นหลัง ---
-        class BgEmber {
-            constructor() {
-                this.reset();
-            }
+        class SakuraPetal {
+            constructor() { this.reset(); }
             reset() {
-                this.x = Math.random() * width;
-                this.y = height + 10;
-                this.radius = Math.random() * 2 + 1;
-                this.vy = -(Math.random() * 1.2 + 0.4);
-                this.vx = (Math.random() - 0.5) * 0.6;
-                this.alpha = Math.random() * 0.4 + 0.1;
-                this.color = Math.random() < 0.5 ? '#d97706' : '#c2410c';
+                this.x = Math.random() * width; this.y = -10;
+                this.size = Math.random() * 7 + 4; this.vy = Math.random() * 1.6 + 0.8;
+                this.vx = Math.random() * 1.5 - 0.5; this.rotation = Math.random() * Math.PI * 2;
+                this.vRot = (Math.random() - 0.5) * 0.05; this.alpha = Math.random() * 0.7 + 0.3;
             }
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.alpha -= 0.0025;
-                if (this.y < -10 || this.alpha <= 0) this.reset();
-            }
+            update() { this.x += this.vx; this.y += this.vy; this.rotation += this.vRot; if (this.y > height + 10) this.reset(); }
             draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.alpha);
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = 5;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.restore();
+                ctx.save(); ctx.globalAlpha = this.alpha;
+                ctx.translate(this.x, this.y); ctx.rotate(this.rotation);
+                ctx.beginPath(); ctx.ellipse(0, 0, this.size, this.size * 0.5, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#f472b6'; ctx.fill(); ctx.restore();
             }
         }
 
-        // --- 8. คลาสสำหรับรอยแผลดาบตัดกลางอากาศ ---
+        class SnowFlake {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * width; this.y = -10;
+                this.radius = Math.random() * 2.5 + 1; this.vy = Math.random() * 1.5 + 1;
+                this.vx = Math.sin(Math.random() * Math.PI) * 1.2; this.alpha = Math.random() * 0.8 + 0.2;
+            }
+            update() { this.x += this.vx; this.y += this.vy; if (this.y > height + 10) this.reset(); }
+            draw() {
+                ctx.save(); ctx.globalAlpha = this.alpha;
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#e0f2fe'; ctx.fill(); ctx.restore();
+            }
+        }
+
+        class BgEmber {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * width; this.y = height + 10;
+                this.radius = Math.random() * 2.8 + 1; this.vy = -(Math.random() * 1.8 + 0.8);
+                this.vx = (Math.random() - 0.5) * 0.8; this.alpha = Math.random() * 0.6 + 0.2;
+                this.color = difficultyLevel === 'hard' ? '#ef4444' : '#d97706';
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.alpha -= 0.0025; if (this.y < -10 || this.alpha <= 0) this.reset(); }
+            draw() {
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill(); ctx.restore();
+            }
+        }
+
         class SlashMark {
-            constructor(x, y, angle, color = '#fef08a') {
-                this.x = x;
-                this.y = y;
-                this.angle = angle;
-                this.length = Math.random() * 120 + 100;
-                this.width = Math.random() * 8 + 6;
-                this.alpha = 1;
-                this.color = color;
+            constructor(x, y, angle, color = '#e2e8f0') {
+                this.x = x; this.y = y; this.angle = angle;
+                this.length = Math.random() * 150 + 120; this.width = Math.random() * 10 + 6;
+                this.alpha = 1; this.color = color;
             }
-
-            update() {
-                this.alpha -= 0.06;
-                this.width *= 0.90;
-            }
-
+            update() { this.alpha -= 0.07; this.width *= 0.88; }
             draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.alpha);
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.angle);
-
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = 15;
-
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.length / 2, this.width / 2, 0, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.length * 0.6, this.width * 1.4, 0, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-
-                ctx.restore();
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.beginPath(); ctx.ellipse(0, 0, this.length / 2, this.width / 2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.restore();
             }
         }
 
-        // --- 9. คลาสสำหรับคลื่นช็อกเวฟวงแหวนพลังงาน ---
         class Shockwave {
             constructor(x, y, color = '#ef4444') {
-                this.x = x;
-                this.y = y;
-                this.radius = 10;
-                this.maxRadius = 140;
-                this.alpha = 1;
-                this.lineWidth = 10;
-                this.color = color;
+                this.x = x; this.y = y; this.radius = 10; this.maxRadius = 150;
+                this.alpha = 1; this.lineWidth = 12; this.color = color;
             }
-
-            update() {
-                this.radius += (this.maxRadius - this.radius) * 0.22;
-                this.alpha -= 0.048;
-                this.lineWidth *= 0.94;
-            }
-
+            update() { this.radius += (this.maxRadius - this.radius) * 0.24; this.alpha -= 0.048; this.lineWidth *= 0.94; }
             draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.alpha);
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = 15;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                ctx.lineWidth = this.lineWidth;
-                ctx.strokeStyle = this.color;
-                ctx.stroke();
-                ctx.restore();
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.lineWidth = this.lineWidth; ctx.strokeStyle = this.color; ctx.stroke(); ctx.restore();
             }
         }
 
-        // --- 10. คลาสสำหรับข้อความเอฟเฟกต์ลอย ---
         class FloatingText {
-            constructor(x, y, text, color = '#d97706') {
-                this.x = x;
-                this.y = y;
-                this.text = text;
-                this.color = color;
-                this.alpha = 1;
-                this.scale = 0.4;
-                this.vy = -3.2;
+            constructor(x, y, text, type = 'good') {
+                this.x = x; this.y = y; this.text = text; this.type = type;
+                this.alpha = 1; this.scale = 0.2; this.vy = type === 'combo' ? -4.8 : -3.8;
+                this.rotation = type === 'combo' ? (Math.random() - 0.5) * 0.2 : 0;
             }
-
             update() {
-                this.y += this.vy;
-                this.alpha -= 0.026;
-                if (this.scale < 1.25) this.scale += 0.09;
+                this.y += this.vy; this.alpha -= 0.018;
+                const maxScale = this.type === 'combo' ? 1.4 : 1.1;
+                if (this.scale < maxScale) this.scale += 0.14;
             }
-
             draw() {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.save(); ctx.globalAlpha = Math.max(0, this.alpha);
                 ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
                 ctx.scale(this.scale, this.scale);
 
-                ctx.shadowColor = this.color;
-                ctx.shadowBlur = 12;
-                ctx.font = 'black 32px sans-serif';
-                ctx.fillStyle = '#ffffff';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = this.color;
-                ctx.strokeText(this.text, 0, 0);
-                ctx.fillText(this.text, 0, 0);
+                let fillColor = '#fef08a';
+                let fontSize = 28;
 
+                if (this.type === 'wrong') {
+                    fillColor = '#ff4d4d';
+                } else if (this.type === 'boom') {
+                    fillColor = '#ff2200'; fontSize = 34;
+                } else if (this.type === 'combo') {
+                    fillColor = '#fbbf24'; fontSize = 36;
+                } else if (this.type === 'multislash') {
+                    fillColor = '#38bdf8'; fontSize = 32;
+                }
+
+                ctx.font = `900 ${fontSize}px sans-serif`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.lineWidth = 7; ctx.strokeStyle = '#000000';
+                ctx.strokeText(this.text, 0, 0);
+                ctx.fillStyle = fillColor; ctx.fillText(this.text, 0, 0);
                 ctx.restore();
             }
         }
 
-        // --- 11. วาดฉากหลัง (ลดมืดโปร่งด้านล่างลง) ---
-        function drawBackground() {
-            // ฉากหลังเน้นมืด นุ่มนวล ไม่จ้า
-            const grad = ctx.createLinearGradient(0, 0, 0, height);
-            grad.addColorStop(0, '#1c0d06');
-            grad.addColorStop(0.5, '#2e1408');
-            grad.addColorStop(1, '#140703'); // ปรับโทนล่างให้สว่างขึ้นเล็กน้อย เห็นผลไม้พุ่งชัดเจน
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, width, height);
+        // ==========================================
+        // วาดฉากหลังของทั้ง 3 สนามประลอง
+        // ==========================================
 
-            ctx.strokeStyle = '#120502';
-            ctx.lineWidth = 2.5;
-            const plankWidth = 80;
-            for (let x = 0; x < width; x += plankWidth) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, height);
-                ctx.stroke();
+        function drawDojoMapDetailed(ctx, width, height, frame) {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            bgGrad.addColorStop(0, '#2a1107'); bgGrad.addColorStop(0.5, '#170803'); bgGrad.addColorStop(1, '#090201');
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#140602'; const colWidth = 32;
+            for (let x = 0; x < width; x += 130) {
+                ctx.fillRect(x, 0, colWidth, height);
+                ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(x + colWidth, 0, 6, height);
+                ctx.fillStyle = '#140602';
             }
 
-            // แสงโคมไฟตรงกลางที่นุ่มลง
-            const lightGrad = ctx.createRadialGradient(width / 2, height / 3, 50, width / 2, height / 3, width * 0.7);
-            lightGrad.addColorStop(0, 'rgba(217, 119, 6, 0.12)');
-            lightGrad.addColorStop(1, 'rgba(0, 0, 0, 0.25)'); // ลดความดำทึบลง
-            ctx.fillStyle = lightGrad;
-            ctx.fillRect(0, 0, width, height);
-        }
+            const shojiW = Math.min(width * 0.75, 600); const shojiH = height * 0.45;
+            const shojiX = (width - shojiW) / 2; const shojiY = height * 0.12;
 
-        // --- 12. ระบบสุ่มและจัดการเป้าหมายคำศัพท์ ---
-        function generateNewWordSet() {
-            const shuffled = [...vocabularyDB].sort(() => Math.random() - 0.5);
-            currentWordSet = shuffled.slice(0, 3);
-            currentSetIndex = 0;
-            updateTargetUI();
-        }
+            ctx.save(); ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 35;
+            ctx.fillStyle = 'rgba(254, 243, 199, 0.12)'; ctx.fillRect(shojiX, shojiY, shojiW, shojiH); ctx.restore();
 
-        function advanceTarget() {
-            currentSetIndex++;
-            if (currentSetIndex >= currentWordSet.length) {
-                generateNewWordSet();
-            } else {
-                updateTargetUI();
+            ctx.strokeStyle = '#451a03'; ctx.lineWidth = 3; ctx.strokeRect(shojiX, shojiY, shojiW, shojiH);
+            ctx.strokeStyle = 'rgba(69, 26, 3, 0.6)'; ctx.lineWidth = 2;
+            for (let x = shojiX + 40; x < shojiX + shojiW; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, shojiY); ctx.lineTo(x, shojiY + shojiH); ctx.stroke();
             }
+            for (let y = shojiY + 35; y < shojiY + shojiH; y += 35) {
+                ctx.beginPath(); ctx.moveTo(shojiX, y); ctx.lineTo(shojiX + shojiW, y); ctx.stroke();
+            }
+
+            drawBanner(shojiX - 55, shojiY + 10, "忍", "#dc2626");
+            drawBanner(shojiX + shojiW + 15, shojiY + 10, "武", "#1e3a8a");
+
+            const rackX = width > 600 ? shojiX - 110 : 20; const rackY = height * 0.6;
+            drawKatanaRack(rackX, rackY);
+
+            const targetX = width > 600 ? shojiX + shojiW + 50 : width - 70;
+            drawNinjaTarget(targetX, rackY + 20);
+
+            const floorY = height - 120;
+            ctx.fillStyle = '#1c0a04'; ctx.fillRect(0, floorY, width, 120);
+            ctx.fillStyle = '#361508'; ctx.fillRect(0, floorY - 12, width, 12);
+            ctx.fillStyle = '#d97706'; ctx.fillRect(0, floorY - 15, width, 3);
         }
 
-        function updateTargetUI() {
-            currentTarget = currentWordSet[currentSetIndex];
-            document.getElementById('target-word').innerText = currentTarget.th;
+        function drawBanner(x, y, char, textBg) {
+            ctx.save(); ctx.fillStyle = textBg; ctx.fillRect(x, y, 40, 130);
+            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.strokeRect(x, y, 40, 130);
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 5, y - 5, 50, 8); ctx.fillRect(x - 5, y + 127, 50, 8);
+            ctx.fillStyle = '#ffffff'; ctx.font = 'bold 22px "PingFang SC", sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText(char, x + 20, y + 70); ctx.restore();
+        }
+
+        function drawKatanaRack(x, y) {
+            ctx.save(); ctx.fillStyle = '#18181b'; ctx.fillRect(x, y, 12, 110); ctx.fillRect(x + 60, y, 12, 110);
+            for (let i = 0; i < 3; i++) {
+                const kY = y + 20 + (i * 32);
+                ctx.fillStyle = '#334155'; ctx.fillRect(x - 15, kY, 100, 6);
+                ctx.fillStyle = '#f59e0b'; ctx.fillRect(x + 10, kY - 3, 8, 12);
+                ctx.fillStyle = '#dc2626'; ctx.fillRect(x + 18, kY - 1, 25, 8);
+            }
+            ctx.restore();
+        }
+
+        function drawNinjaTarget(x, y) {
+            ctx.save(); ctx.fillStyle = '#451a03'; ctx.fillRect(x + 18, y, 14, 100);
+            ctx.beginPath(); ctx.arc(x + 25, y + 30, 28, 0, Math.PI * 2); ctx.fillStyle = '#d97706'; ctx.fill();
+            ctx.lineWidth = 4; ctx.strokeStyle = '#78350f'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(x + 25, y + 30, 14, 0, Math.PI * 2); ctx.fillStyle = '#dc2626'; ctx.fill();
+            ctx.restore();
+        }
+
+        function drawSakuraMapDetailed(ctx, width, height, frame) {
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+            skyGrad.addColorStop(0, '#0c102b'); skyGrad.addColorStop(0.5, '#1e1b4b'); skyGrad.addColorStop(1, '#312e81');
+            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, width, height);
+
+            ctx.save(); ctx.shadowColor = '#fef08a'; ctx.shadowBlur = 50;
+            ctx.fillStyle = '#fffbeb'; ctx.beginPath(); ctx.arc(width * 0.78, height * 0.22, 70, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+            drawJapanesePagoda(width * 0.12, height * 0.25);
+            drawToriiGate(width * 0.52, height * 0.42);
+            drawGiantSakuraTree(width, 0);
+
+            const floorY = height - 110;
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, floorY, width, 110);
+            ctx.fillStyle = '#334155'; ctx.fillRect(0, floorY - 10, width, 10);
+        }
+
+        function drawJapanesePagoda(x, y) {
+            ctx.save(); ctx.fillStyle = '#0f172a';
+            for (let i = 0; i < 4; i++) {
+                const tierW = 90 - (i * 14); const tierY = y + 160 - (i * 38); const roofW = tierW + 36;
+                ctx.fillStyle = '#1e293b'; ctx.beginPath();
+                ctx.moveTo(x - roofW / 2, tierY); ctx.lineTo(x, tierY - 14); ctx.lineTo(x + roofW / 2, tierY);
+                ctx.lineTo(x + tierW / 2, tierY + 6); ctx.lineTo(x - tierW / 2, tierY + 6); ctx.closePath(); ctx.fill();
+                ctx.fillStyle = '#f59e0b'; ctx.fillRect(x - tierW / 3, tierY + 6, tierW / 1.5, 22);
+            }
+            ctx.fillStyle = '#f59e0b'; ctx.fillRect(x - 3, y, 6, 40); ctx.restore();
+        }
+
+        function drawToriiGate(x, y) {
+            ctx.save(); ctx.fillStyle = '#dc2626';
+            ctx.fillRect(x - 55, y, 14, 150); ctx.fillRect(x + 41, y, 14, 150);
+            ctx.fillRect(x - 75, y - 10, 150, 14);
+            ctx.fillStyle = '#0f172a'; ctx.fillRect(x - 80, y - 16, 160, 8);
+            ctx.fillStyle = '#dc2626'; ctx.fillRect(x - 65, y + 25, 130, 10); ctx.restore();
+        }
+
+        function drawGiantSakuraTree(x, y) {
+            ctx.save(); ctx.strokeStyle = '#291b15'; ctx.lineWidth = 26;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x - 150, y + 120, x - 300, y + 80); ctx.stroke();
+            const blossoms = [{ bx: x - 120, by: y + 80, r: 60 }, { bx: x - 220, by: y + 70, r: 75 }, { bx: x - 300, by: y + 90, r: 55 }];
+            blossoms.forEach(b => {
+                ctx.fillStyle = 'rgba(244, 114, 182, 0.85)';
+                ctx.beginPath(); ctx.arc(b.bx, b.by, b.r, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.restore();
+        }
+
+        function drawVolcanoMapDetailed(ctx, width, height, frame) {
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+            bgGrad.addColorStop(0, '#090202'); bgGrad.addColorStop(0.4, '#2d0606'); bgGrad.addColorStop(1, '#580c0c');
+            ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#170303';
+            ctx.beginPath();
+            ctx.moveTo(0, height * 0.65); ctx.lineTo(width * 0.25, height * 0.28);
+            ctx.lineTo(width * 0.35, height * 0.35); ctx.lineTo(width * 0.65, height * 0.22);
+            ctx.lineTo(width, height * 0.55); ctx.lineTo(width, height); ctx.lineTo(0, height);
+            ctx.closePath(); ctx.fill();
+
+            const lavaY = height - 100;
+            ctx.fillStyle = '#0f0202'; ctx.fillRect(0, lavaY, width, 100);
+            const lavaGrad = ctx.createLinearGradient(0, lavaY, 0, height);
+            lavaGrad.addColorStop(0, '#dc2626'); lavaGrad.addColorStop(0.5, '#f97316'); lavaGrad.addColorStop(1, '#fef08a');
             
-            wordTimer = TARGET_TIME_LIMIT;
-            updateTimerUI();
+            ctx.save(); ctx.shadowColor = '#f97316'; ctx.shadowBlur = 25; ctx.fillStyle = lavaGrad;
+            ctx.beginPath(); ctx.moveTo(0, lavaY + 10);
+            for (let x = 0; x <= width; x += 40) {
+                const wave = Math.sin((x * 0.02) + (frame * 0.08)) * 8;
+                ctx.lineTo(x, lavaY + 15 + wave);
+            }
+            ctx.lineTo(width, height); ctx.lineTo(0, height); ctx.closePath(); ctx.fill(); ctx.restore();
         }
 
-        function updateTimerUI() {
+        function filterVocabList() {
+            activeVocabList = vocabularyDB.filter(item => item.cat === selectedCategory);
+            if (activeVocabList.length === 0) activeVocabList = vocabularyDB.filter(item => item.cat === 'fruit');
+        }
+
+        function updateComboUI() {
+            const badge = document.getElementById('combo-badge');
+            const valText = document.getElementById('combo-val');
+            
+            if (comboStreak >= 2) {
+                badge.style.opacity = '1';
+                valText.innerText = `x${comboStreak}`;
+                badge.classList.remove('combo-active');
+                void badge.offsetWidth; // Trigger reflow for animation
+                badge.classList.add('combo-active');
+            } else {
+                badge.style.opacity = '0';
+            }
+        }
+
+        // สุ่มคำไทยเป้าหมายใหม่
+        function pickNextTargetWord() {
+            if (activeVocabList.length === 0) filterVocabList();
+            
+            let nextWord;
+            do {
+                nextWord = activeVocabList[Math.floor(Math.random() * activeVocabList.length)];
+            } while (activeVocabList.length > 1 && currentTarget && nextWord.cn === currentTarget.cn);
+
+            currentTarget = nextWord;
+            targetTimer = TARGET_TIME_LIMIT;
+            document.getElementById('target-word').innerText = currentTarget.th;
+            updateTargetTimerUI();
+        }
+
+        function updateTargetTimerUI() {
             const bar = document.getElementById('target-timer-bar');
             const text = document.getElementById('target-timer-text');
-            
-            const pct = Math.max(0, (wordTimer / TARGET_TIME_LIMIT) * 100);
+            const pct = Math.max(0, (targetTimer / TARGET_TIME_LIMIT) * 100);
             bar.style.width = `${pct}%`;
-            
-            const secondsLeft = Math.ceil(wordTimer);
-            text.innerText = `⏱️ เปลี่ยนคำศัพท์ใน: ${secondsLeft}s`;
-
-            if (pct < 30) {
-                bar.className = "bg-gradient-to-r from-red-600 via-amber-600 to-red-500 h-full rounded-full transition-all duration-100 ease-linear shadow-[0_0_8px_#dc2626]";
-            } else {
-                bar.className = "bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-300 h-full rounded-full transition-all duration-100 ease-linear shadow-[0_0_8px_#d97706]";
-            }
+            text.innerText = `⏱️ เปลี่ยนคำศัพท์ใน: ${Math.ceil(targetTimer)}s ${freezeTimer > 0 ? '❄️ (FREEZE)' : ''}`;
         }
 
-        // --- 13. การรับฟันคำและเช็คการชน ---
         function checkSliceCollision(x1, y1, x2, y2) {
             for (let i = items.length - 1; i >= 0; i--) {
                 const item = items[i];
                 if (item.isSliced) continue;
-
                 const dist = distToSegment({ x: item.x, y: item.y }, { x: x1, y: y1 }, { x: x2, y: y2 });
-
                 if (dist < item.radius) {
                     item.isSliced = true;
+                    strokeSliceCount++;
                     const angle = Math.atan2(y2 - y1, x2 - x1);
-
-                    slashMarks.push(new SlashMark(item.x, item.y, angle, item.isBomb ? '#ef4444' : '#fef08a'));
+                    slashMarks.push(new SlashMark(item.x, item.y, angle, item.isBomb ? '#ef4444' : (item.isFreeze ? '#38bdf8' : '#e2e8f0')));
 
                     if (item.isBomb) {
                         createExplosionFX(item.x, item.y, '#ef4444');
-                        soundFX.playBomb();
                         triggerScreenShake(18, 18);
-                        floatingTexts.push(new FloatingText(item.x, item.y, "BOOM!", "#ef4444"));
-                        loseLife("คุณฟันโดนระเบิด! 💣");
+                        floatingTexts.push(new FloatingText(item.x, item.y, "BOOM! 💣", "boom"));
+                        comboStreak = 0;
+                        updateComboUI();
+                        loseLife("โดนระเบิด! 💣");
+                    } else if (item.isFreeze) {
+                        freezeTimer = 5.0;
+                        document.getElementById('freeze-overlay').style.opacity = '1';
+                        floatingTexts.push(new FloatingText(item.x, item.y, "FREEZE! ❄️", "freeze"));
                     } else {
-                        fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, true, angle));
-                        fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, false, angle));
-
-                        createFruitCutFX(item.x, item.y, item.fruitType.pColor);
+                        objectHalves.push(new ObjectHalf(item.x, item.y, item.radius, item.wordObj.color, true, angle));
+                        objectHalves.push(new ObjectHalf(item.x, item.y, item.radius, item.wordObj.color, false, angle));
                         triggerScreenShake(8, 10);
 
+                        // ตรวจสอบว่าฟันอักษรจีนตรงกับเป้าหมายภาษาไทยด้านบนหรือไม่
                         if (item.wordObj.cn === currentTarget.cn) {
-                            soundFX.playHit();
-                            score += 10;
-                            document.getElementById('score-val').innerText = score;
+                            strokeCorrectCount++;
+                            comboStreak++;
                             
-                            const comboWords = ["GREAT!", "PERFECT!", "EXCELLENT!", "CRITICAL!"];
-                            const randomCombo = comboWords[Math.floor(Math.random() * comboWords.length)];
-                            floatingTexts.push(new FloatingText(item.x, item.y, randomCombo, "#d97706"));
+                            // คำนวณคะแนนตาม Combo Streak Multiplier
+                            const comboMultiplier = Math.floor(comboStreak / 3) + 1;
+                            const pointsEarned = 10 * comboMultiplier;
+                            score += pointsEarned;
+                            document.getElementById('score-val').innerText = score;
+                            updateComboUI();
 
-                            advanceTarget();
+                            // แสดงเอฟเฟกต์ Floating Text พิเศษเมื่อทำ Combo ได้สูง
+                            if (comboStreak % 3 === 0) {
+                                let comboTitle = `🔥 ${comboStreak} COMBO!`;
+                                if (comboStreak >= 9) comboTitle = `🌟 ${comboStreak} LEGENDARY COMBO!`;
+                                else if (comboStreak >= 6) comboTitle = `⚡ ${comboStreak} ULTRA COMBO!`;
+
+                                floatingTexts.push(new FloatingText(item.x, item.y - 30, comboTitle, "combo"));
+                            }
+
+                            floatingTexts.push(new FloatingText(item.x, item.y, `${item.wordObj.cn} (+${pointsEarned})`, "good"));
+
+                            // ฟันถูกแล้ว สุ่มเปลี่ยนเป้าหมายคำไทยใหม่ทันที
+                            pickNextTargetWord();
                         } else {
-                            soundFX.playWrong();
-                            floatingTexts.push(new FloatingText(item.x, item.y, "WRONG!", "#dc2626"));
-                            loseLife("ฟันผิดคำศัพท์! ❌");
+                            // ฟันผิดคำศัพท์จีน! เสียชีวิต 1 หัวใจ + รีเซ็ต Combo
+                            comboStreak = 0;
+                            updateComboUI();
+                            loseLife(`ฟันคำผิด! (${item.wordObj.cn} = ${item.wordObj.th}) ❌`);
+                            floatingTexts.push(new FloatingText(item.x, item.y, `ผิด! ${item.wordObj.cn} (${item.wordObj.th})`, "wrong"));
                         }
                     }
-
                     items.splice(i, 1);
                 }
             }
@@ -784,47 +1083,25 @@
             return Math.hypot(p.x - (v.x + t * (w.x - v.x)), p.y - (v.y + t * (w.y - v.y)));
         }
 
-        function createFruitCutFX(x, y, color) {
-            for (let i = 0; i < 22; i++) {
-                particles.push(new Particle(x, y, color, false));
-            }
-            for (let i = 0; i < 14; i++) {
-                particles.push(new Particle(x, y, '#ffffff', true));
-            }
-            shockwaves.push(new Shockwave(x, y, color));
-        }
-
         function createExplosionFX(x, y, color) {
-            for (let i = 0; i < 35; i++) {
-                particles.push(new Particle(x, y, '#ea580c', true));
-            }
-            for (let i = 0; i < 22; i++) {
-                particles.push(new Particle(x, y, '#dc2626', false));
-            }
+            for (let i = 0; i < 30; i++) particles.push(new Particle(x, y, color, true));
             shockwaves.push(new Shockwave(x, y, color));
         }
 
-        function loseLife(reason = "ชีวิตของคุณหมดลงแล้ว! 💔") {
-            const now = Date.now();
-            if (now - lastDamageTime < DAMAGE_COOLDOWN) {
-                return;
-            }
-            lastDamageTime = now;
-
-            lives--;
-            updateLivesUI();
-            triggerDamageFlash();
-
-            if (lives <= 0) {
-                gameOver(reason);
-            }
-        }
-
-        function triggerDamageFlash() {
+        function loseLife(reason) {
+            if (Date.now() - lastDamageTime < DAMAGE_COOLDOWN) return;
+            lastDamageTime = Date.now();
+            lives--; updateLivesUI();
+            comboStreak = 0;
+            updateComboUI();
             const flash = document.getElementById('damage-flash');
-            flash.classList.remove('damage-overlay');
-            void flash.offsetWidth;
-            flash.classList.add('damage-overlay');
+            flash.classList.remove('damage-overlay'); void flash.offsetWidth; flash.classList.add('damage-overlay');
+            if (lives <= 0) {
+                isGameOver = true;
+                document.getElementById('game-over-reason').innerText = reason;
+                document.getElementById('final-score').innerText = score;
+                document.getElementById('game-over-modal').classList.remove('hidden');
+            }
         }
 
         function updateLivesUI() {
@@ -837,286 +1114,259 @@
             }
         }
 
-        // --- 14. ลูปหลักของเกม (ปรับเพิ่มจังหวะถี่ขึ้นนิดหน่อย) ---
         function gameLoop(timestamp) {
-            if (isGameOver) return;
-
+            if (isGameOver || isPaused) return;
             if (!lastTimestamp) lastTimestamp = timestamp;
             const dt = (timestamp - lastTimestamp) / 1000;
             lastTimestamp = timestamp;
+            animFrameCount++;
 
             if (dt && dt < 0.5) {
-                wordTimer -= dt;
-                if (wordTimer <= 0) {
-                    advanceTarget();
+                if (freezeTimer > 0) {
+                    freezeTimer -= dt;
+                    if (freezeTimer <= 0) { freezeTimer = 0; document.getElementById('freeze-overlay').style.opacity = '0'; }
+                }
+
+                // นับถอยหลังเวลาเป้าหมาย 12 วินาที
+                targetTimer -= (freezeTimer > 0 ? dt * 0.3 : dt);
+                if (targetTimer <= 0) {
+                    pickNextTargetWord();
                 } else {
-                    updateTimerUI();
+                    updateTargetTimerUI();
                 }
             }
 
             ctx.save();
             if (shakeTime > 0) {
-                const shakeX = (Math.random() - 0.5) * shakeMagnitude;
-                const shakeY = (Math.random() - 0.5) * shakeMagnitude;
-                ctx.translate(shakeX, shakeY);
+                ctx.translate((Math.random() - 0.5) * shakeMagnitude, (Math.random() - 0.5) * shakeMagnitude);
                 shakeTime--;
             }
 
-            drawBackground();
-
-            // อัปเดตประกายไฟพื้นหลัง
-            for (let i = 0; i < bgEmbers.length; i++) {
-                bgEmbers[i].update();
-                bgEmbers[i].draw();
+            if (difficultyLevel === 'easy') drawDojoMapDetailed(ctx, width, height, animFrameCount);
+            else if (difficultyLevel === 'normal') {
+                drawSakuraMapDetailed(ctx, width, height, animFrameCount);
+                sakuraPetals.forEach(p => { p.update(); p.draw(); });
+            } else if (difficultyLevel === 'hard') {
+                drawVolcanoMapDetailed(ctx, width, height, animFrameCount);
+                bgEmbers.forEach(e => { e.update(); e.draw(); });
             }
 
-            // ปล่อยวัตถุ (ปรับให้ถี่ขึ้นนิดหน่อย: ช่วง 0.6s - 1.4s)
+            if (freezeTimer > 0) snowFlakes.forEach(s => { s.update(); s.draw(); });
+
             spawnTimer++;
             if (spawnTimer >= nextSpawnInterval) {
                 spawnTimer = 0;
                 spawnSingleItem();
-
-                const minInterval = Math.max(35, 60 - Math.floor(score / 25) * 4);
-                const maxInterval = Math.max(70, 110 - Math.floor(score / 20) * 5);
-                nextSpawnInterval = Math.floor(Math.random() * (maxInterval - minInterval)) + minInterval;
+                nextSpawnInterval = Math.floor(Math.random() * 35) + 35;
             }
 
-            // อัปเดตและวาดวัตถุผลไม้
-            for (let i = items.length - 1; i >= 0; i--) {
-                const item = items[i];
-                item.update();
-                item.draw();
-
+            // อัปเดตตำแหน่งสิ่งของ
+            items.forEach((item, index) => {
+                item.update(); item.draw();
                 if (item.y - item.radius > height + 50) {
-                    items.splice(i, 1);
+                    items.splice(index, 1);
                 }
-            }
+            });
 
-            // อัปเดตและวาดผลไม้ซีก
-            for (let i = fruitHalves.length - 1; i >= 0; i--) {
-                const fh = fruitHalves[i];
-                fh.update();
-                fh.draw();
-                if (fh.alpha <= 0 || fh.y > height + 100) {
-                    fruitHalves.splice(i, 1);
-                }
-            }
+            objectHalves.forEach((oh, index) => { oh.update(); oh.draw(); if (oh.alpha <= 0) objectHalves.splice(index, 1); });
+            shockwaves.forEach((sw, index) => { sw.update(); sw.draw(); if (sw.alpha <= 0) shockwaves.splice(index, 1); });
+            slashMarks.forEach((sm, index) => { sm.update(); sm.draw(); if (sm.alpha <= 0) slashMarks.splice(index, 1); });
+            particles.forEach((p, index) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(index, 1); });
+            floatingTexts.forEach((ft, index) => { ft.update(); ft.draw(); if (ft.alpha <= 0) floatingTexts.splice(index, 1); });
 
-            // อัปเดตและวาดคลื่นช็อกเวฟ
-            for (let i = shockwaves.length - 1; i >= 0; i--) {
-                const sw = shockwaves[i];
-                sw.update();
-                sw.draw();
-                if (sw.alpha <= 0) shockwaves.splice(i, 1);
-            }
-
-            // อัปเดตและวาดรอยแผลตัดกลางอากาศ
-            for (let i = slashMarks.length - 1; i >= 0; i--) {
-                const sm = slashMarks[i];
-                sm.update();
-                sm.draw();
-                if (sm.alpha <= 0) slashMarks.splice(i, 1);
-            }
-
-            // อัปเดตและวาดอนุภาคประกายไฟ
-            for (let i = particles.length - 1; i >= 0; i--) {
-                const p = particles[i];
-                p.update();
-                p.draw();
-                if (p.alpha <= 0) particles.splice(i, 1);
-            }
-
-            // อัปเดตและวาดข้อความเอฟเฟกต์ลอย
-            for (let i = floatingTexts.length - 1; i >= 0; i--) {
-                const ft = floatingTexts[i];
-                ft.update();
-                ft.draw();
-                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
-            }
-
-            // วาดรอยดาบนินจาพลังแสง
-            drawSuperSliceTrail();
-
+            drawKatanaBladeTrailFX();
             ctx.restore();
-
             requestAnimationFrame(gameLoop);
         }
 
-        // สุ่มปล่อยวัตถุ
         function spawnSingleItem() {
             const bombChance = Math.min(0.08 + (score * 0.001), 0.18);
-            const isBomb = Math.random() < bombChance;
-
-            if (isBomb) {
-                items.push(new Item(null, true));
+            if (Math.random() < bombChance) {
+                items.push(new Item(null, true, false));
+            } else if (Math.random() < 0.06) {
+                items.push(new Item(null, false, true));
             } else {
                 targetSpawnCounter++;
                 let selectedWord;
-
-                const targetChance = Math.max(0.32, 0.48 - (score * 0.002));
-
-                if (Math.random() < targetChance || targetSpawnCounter >= 4) {
-                    selectedWord = currentTarget;
-                    targetSpawnCounter = 0;
+                if (Math.random() < 0.48 || targetSpawnCounter >= 4) {
+                    selectedWord = currentTarget; targetSpawnCounter = 0;
                 } else {
-                    let wrongWords = vocabularyDB.filter(v => v.cn !== currentTarget.cn);
-                    selectedWord = wrongWords[Math.floor(Math.random() * wrongWords.length)];
+                    let otherWords = activeVocabList.filter(v => v.cn !== currentTarget.cn);
+                    selectedWord = otherWords[Math.floor(Math.random() * otherWords.length)] || currentTarget;
                 }
 
-                items.push(new Item(selectedWord, false));
+                const shapes = SHAPES_BY_CAT[selectedCategory] || SHAPES_BY_CAT.fruit;
+                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+
+                items.push(new Item(selectedWord, false, false, null, randomShape));
             }
         }
 
-        // วาดเส้นดาบนินจาแบบ Neon Trail พอดีสายตา
-        function drawSuperSliceTrail() {
+        // เอฟเฟกต์รอยฟันดาบซามูไร ( Katana Trail FX - เปลี่ยนเป็นสีทองเมื่อ Combo สูง )
+        function drawKatanaBladeTrailFX() {
             if (slicePath.length < 2) return;
-
             ctx.save();
-
-            // ชั้นที่ 1: รัศมีออร่านุ่มนวล
+            const len = slicePath.length;
+            const isHighCombo = comboStreak >= 5;
+            
             ctx.beginPath();
             ctx.moveTo(slicePath[0].x, slicePath[0].y);
-            for (let i = 1; i < slicePath.length; i++) {
-                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = isHighCombo ? 26 : 22;
+            
+            if (freezeTimer > 0) {
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            } else if (isHighCombo) {
+                ctx.strokeStyle = 'rgba(251, 191, 36, 0.5)'; // แสงออร่าดาบทองคำ
+            } else {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             }
-            ctx.lineWidth = 14;
-            ctx.strokeStyle = 'rgba(217, 119, 6, 0.3)';
-            ctx.shadowColor = '#d97706';
-            ctx.shadowBlur = 18;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
             ctx.stroke();
 
-            // ชั้นที่ 2: เส้นสีส้มเหลืองหลัก
             ctx.beginPath();
             ctx.moveTo(slicePath[0].x, slicePath[0].y);
-            for (let i = 1; i < slicePath.length; i++) {
-                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            for (let i = 1; i < len; i++) ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            ctx.lineWidth = 8;
+            
+            if (freezeTimer > 0) {
+                ctx.strokeStyle = '#38bdf8';
+            } else if (isHighCombo) {
+                ctx.strokeStyle = '#fbbf24'; // แกนกลางดาบทองคำ
+            } else {
+                ctx.strokeStyle = '#ffffff';
             }
-            ctx.lineWidth = 7;
-            ctx.strokeStyle = '#f59e0b';
-            ctx.shadowColor = '#f59e0b';
-            ctx.shadowBlur = 10;
             ctx.stroke();
 
-            // ชั้นที่ 3: แกนแสงสีขาวตรงกลาง
-            ctx.beginPath();
-            ctx.moveTo(slicePath[0].x, slicePath[0].y);
-            for (let i = 1; i < slicePath.length; i++) {
-                ctx.lineTo(slicePath[i].x, slicePath[i].y);
+            if (Math.random() < 0.7 && len > 0) {
+                const tip = slicePath[len - 1];
+                let sparkColor = '#fbbf24';
+                if (freezeTimer > 0) sparkColor = '#38bdf8';
+                else if (isHighCombo) sparkColor = '#f59e0b';
+
+                particles.push(new Particle(tip.x, tip.y, sparkColor, true));
             }
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#ffffff';
-            ctx.shadowBlur = 0;
-            ctx.stroke();
 
-            // หัวดาบเรืองแสง
-            const tip = slicePath[slicePath.length - 1];
-            ctx.beginPath();
-            ctx.arc(tip.x, tip.y, 7, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = '#fef08a';
-            ctx.shadowBlur = 16;
-            ctx.fill();
-
+            if (slicePath.length > 12) slicePath.shift();
             ctx.restore();
-
-            if (slicePath.length > 9) {
-                slicePath.shift();
-            }
         }
 
-        // --- 15. การจับเหตุการณ์เมาส์และทัชสกรีน ---
         function handlePointerDown(e) {
-            soundFX.init();
+            if (isPaused || isGameOver) return;
             isSlicing = true;
             slicePath = [];
-            const pos = getPointerPos(e);
-            slicePath.push(pos);
+            strokeSliceCount = 0;
+            strokeCorrectCount = 0;
+            slicePath.push(getPointerPos(e));
         }
 
         function handlePointerMove(e) {
-            if (!isSlicing) return;
-            const pos = getPointerPos(e);
-            slicePath.push(pos);
-
+            if (!isSlicing || isPaused || isGameOver) return;
+            const pos = getPointerPos(e); slicePath.push(pos);
             if (slicePath.length >= 2) {
-                const p1 = slicePath[slicePath.length - 2];
-                const p2 = slicePath[slicePath.length - 1];
-                soundFX.playSlice();
-                checkSliceCollision(p1.x, p1.y, p2.x, p2.y);
+                checkSliceCollision(slicePath[slicePath.length - 2].x, slicePath[slicePath.length - 2].y, pos.x, pos.y);
             }
         }
 
         function handlePointerUp() {
-            isSlicing = false;
-            slicePath = [];
+            if (isSlicing) {
+                // ตรวจจับ Multi-slice Combo เมื่อลากดาบฟันโดนคำตอบถูกต้องหลายลูกในครั้งเดียว
+                if (strokeCorrectCount >= 2) {
+                    const multiBonus = strokeCorrectCount * 15;
+                    score += multiBonus;
+                    document.getElementById('score-val').innerText = score;
+
+                    const lastPos = slicePath[slicePath.length - 1] || { x: width / 2, y: height / 2 };
+                    const multiText = strokeCorrectCount === 2 ? "⚡ DOUBLE SLASH!" : (strokeCorrectCount === 3 ? "⚡ TRIPLE SLASH!" : `⚡ ${strokeCorrectCount}x MULTI SLASH!`);
+                    
+                    floatingTexts.push(new FloatingText(lastPos.x, lastPos.y - 20, `${multiText} (+${multiBonus})`, "multislash"));
+                }
+            }
+            isSlicing = false; slicePath = [];
         }
 
         function getPointerPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return {
-                x: clientX - rect.left,
-                y: clientY - rect.top
-            };
+            return { x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top };
         }
 
         canvas.addEventListener('mousedown', handlePointerDown);
         canvas.addEventListener('mousemove', handlePointerMove);
         window.addEventListener('mouseup', handlePointerUp);
-
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handlePointerDown(e); }, { passive: false });
         canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handlePointerMove(e); }, { passive: false });
         window.addEventListener('touchend', handlePointerUp);
 
-        // --- 16. ระบบควบคุมสถานะเกม ---
+        document.querySelectorAll('.cat-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                document.querySelectorAll('.cat-card').forEach(c => c.classList.remove('card-glow-selected'));
+                const target = e.currentTarget;
+                target.classList.add('card-glow-selected');
+                selectedCategory = target.dataset.cat;
+            });
+        });
+
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.className = "diff-btn bg-stone-900 border border-stone-800 py-2 rounded-xl text-xs font-bold transition text-stone-300");
+                e.currentTarget.className = "diff-btn bg-amber-600 border border-amber-500 py-2 rounded-xl text-xs font-bold text-white shadow-lg";
+                difficultyLevel = e.currentTarget.dataset.diff;
+            });
+        });
+
+        // จัดการระบบหยุดเกมและออกจากเกม
+        document.getElementById('exit-btn').addEventListener('click', () => {
+            isPaused = true;
+            document.getElementById('pause-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('resume-btn').addEventListener('click', () => {
+            isPaused = false;
+            lastTimestamp = performance.now();
+            document.getElementById('pause-modal').classList.add('hidden');
+            requestAnimationFrame(gameLoop);
+        });
+
+        document.getElementById('exit-menu-btn').addEventListener('click', () => {
+            isPaused = false; isGameOver = true;
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('start-menu-modal').classList.remove('hidden');
+        });
+
         function startGame() {
-            score = 0;
-            lives = 5;
-            isGameOver = false;
-            lastDamageTime = 0;
-            lastTimestamp = 0;
-            lastSpawnX = null;
-            shakeTime = 0;
-            
-            items = [];
-            fruitHalves = [];
-            particles = [];
-            slashMarks = [];
-            shockwaves = [];
-            floatingTexts = [];
-            slicePath = [];
+            score = 0; comboStreak = 0; lives = 5; isGameOver = false; isPaused = false; freezeTimer = 0;
+            lastDamageTime = 0; lastTimestamp = 0; lastSpawnX = null; shakeTime = 0; animFrameCount = 0;
+            strokeSliceCount = 0; strokeCorrectCount = 0;
+            document.getElementById('freeze-overlay').style.opacity = '0';
+            items = []; objectHalves = []; particles = []; slashMarks = []; shockwaves = []; floatingTexts = []; slicePath = [];
+            bgEmbers = []; sakuraPetals = []; snowFlakes = [];
 
-            bgEmbers = [];
-            for (let i = 0; i < 16; i++) {
-                bgEmbers.push(new BgEmber());
-            }
+            if (difficultyLevel === 'normal') for (let i = 0; i < 22; i++) sakuraPetals.push(new SakuraPetal());
+            else if (difficultyLevel === 'hard') for (let i = 0; i < 20; i++) bgEmbers.push(new BgEmber());
 
-            spawnTimer = 0;
-            nextSpawnInterval = 50;
-            targetSpawnCounter = 0;
+            for (let i = 0; i < 25; i++) snowFlakes.push(new SnowFlake());
 
+            filterVocabList();
+            const catNames = { fruit: "🍎 ผลไม้สด", veg: "🥦 ผักสด", meat: "🥩 เนื้อสัตว์", dish: "🍳 เมนูปรุงสุก" };
+            document.getElementById('category-badge').innerText = catNames[selectedCategory] || "🍎 ผลไม้สด";
+            document.getElementById('map-indicator').innerText = { easy: "⛩️ โรงฝึกไม้", normal: "🌸 วัดซากุระ", hard: "🌋 ภูเขาไฟ" }[difficultyLevel];
+
+            spawnTimer = 0; nextSpawnInterval = 45;
             document.getElementById('score-val').innerText = '0';
             document.getElementById('game-over-modal').classList.add('hidden');
+            document.getElementById('pause-modal').classList.add('hidden');
+            document.getElementById('start-menu-modal').classList.add('hidden');
+            
             updateLivesUI();
-            
-            generateNewWordSet();
-            
+            updateComboUI();
+            pickNextTargetWord();
             requestAnimationFrame(gameLoop);
         }
 
-        function gameOver(reason) {
-            isGameOver = true;
-            document.getElementById('game-over-reason').innerText = reason;
-            document.getElementById('final-score').innerText = score;
-            document.getElementById('game-over-modal').classList.remove('hidden');
-        }
-
-        document.getElementById('restart-btn').addEventListener('click', startGame);
-
-        startGame();
+        document.getElementById('start-game-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', () => {
+            document.getElementById('start-menu-modal').classList.remove('hidden');
+            document.getElementById('game-over-modal').classList.add('hidden');
+        });
     </script>
 </body>
 </html>
