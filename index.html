@@ -17,9 +17,19 @@
         canvas {
             display: block;
         }
+        @keyframes damageFlash {
+            0% { opacity: 0.6; }
+            100% { opacity: 0; }
+        }
+        .damage-overlay {
+            animation: damageFlash 0.4s ease-out forwards;
+        }
     </style>
 </head>
 <body class="w-screen h-screen flex flex-col justify-center items-center relative">
+
+    <!-- เอฟเฟกต์หน้าจอกระพริบสีแดงเมื่อเสียชีวิต -->
+    <div id="damage-flash" class="absolute inset-0 bg-red-600/40 pointer-events-none z-30 opacity-0"></div>
 
     <!-- UI Overlay ด้านบน -->
     <div id="ui-overlay" class="absolute top-0 left-0 w-full p-4 flex flex-col items-center justify-between pointer-events-none z-10">
@@ -97,16 +107,16 @@
             { cn: "钱", pinyin: "qián", th: "เงิน" }
         ];
 
-        // ชนิดผลไม้หลากสีสัน (เพิ่มเป็น 8 ชนิด)
+        // ชนิดผลไม้หลากสีสัน
         const FRUIT_TYPES = [
-            { name: 'watermelon', bg: '#15803d', inner: '#ef4444', border: '#166534', pColor: '#ef4444' }, // แตงโม (เขียว/แดง)
-            { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },     // ส้ม (ส้มสด)
-            { name: 'apple', bg: '#dc2626', inner: '#fef3c7', border: '#991b1b', pColor: '#ef4444' },      // แอปเปิ้ล (แดงเข้ม)
-            { name: 'strawberry', bg: '#e11d48', inner: '#fecdd3', border: '#9f1239', pColor: '#fb7185' }, // สตรอว์เบอร์รี (ชมพูแดง)
-            { name: 'lemon', bg: '#eab308', inner: '#fef9c3', border: '#a16207', pColor: '#facc15' },       // เลมอน (เหลือง)
-            { name: 'blueberry', bg: '#2563eb', inner: '#dbeafe', border: '#1e40af', pColor: '#60a5fa' },   // บลูเบอร์รี (น้ำเงิน)
-            { name: 'dragonfruit', bg: '#db2777', inner: '#f1f5f9', border: '#9d174d', pColor: '#f472b6' }, // แก้วมังกร (ชมพูม่วง/ขาว)
-            { name: 'kiwi', bg: '#65a30d', inner: '#ecfccb', border: '#3f6212', pColor: '#a3e635' }        // กีวี่ (เขียวมะนาว)
+            { name: 'watermelon', bg: '#15803d', inner: '#ef4444', border: '#166534', pColor: '#ef4444' },
+            { name: 'orange', bg: '#ea580c', inner: '#ffedd5', border: '#c2410c', pColor: '#f97316' },
+            { name: 'apple', bg: '#dc2626', inner: '#fef3c7', border: '#991b1b', pColor: '#ef4444' },
+            { name: 'strawberry', bg: '#e11d48', inner: '#fecdd3', border: '#9f1239', pColor: '#fb7185' },
+            { name: 'lemon', bg: '#eab308', inner: '#fef9c3', border: '#a16207', pColor: '#facc15' },
+            { name: 'blueberry', bg: '#2563eb', inner: '#dbeafe', border: '#1e40af', pColor: '#60a5fa' },
+            { name: 'dragonfruit', bg: '#db2777', inner: '#f1f5f9', border: '#9d174d', pColor: '#f472b6' },
+            { name: 'kiwi', bg: '#65a30d', inner: '#ecfccb', border: '#3f6212', pColor: '#a3e635' }
         ];
 
         // --- 2. ระบบ Web Audio API สำหรับเอฟเฟกต์เสียง ---
@@ -192,7 +202,7 @@
         resizeCanvas();
 
         let score = 0;
-        let lives = 5; // 5 ชีวิต
+        let lives = 5;
         let isGameOver = false;
         let currentTarget = null;
         let items = [];
@@ -202,6 +212,10 @@
         let isSlicing = false;
         let spawnTimer = 0;
         let spawnInterval = 85;
+
+        // ตัวแปรป้องกันการเสียชีวิตซ้ำซ้อน
+        let lastDamageTime = 0;
+        const DAMAGE_COOLDOWN = 500; // เวลาป้องกัน 0.5 วินาที
 
         // --- 4. คลาสสร้างวัตถุ (ผลไม้คำศัพท์ และ ระเบิด) ---
         class Item {
@@ -240,7 +254,6 @@
                 ctx.rotate(this.rotation);
 
                 if (this.isBomb) {
-                    // วาดลูกระเบิด
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                     ctx.fillStyle = '#1c1917';
@@ -249,7 +262,6 @@
                     ctx.strokeStyle = '#ef4444';
                     ctx.stroke();
 
-                    // ชนวนระเบิด
                     ctx.beginPath();
                     ctx.moveTo(0, -this.radius);
                     ctx.quadraticCurveTo(10, -this.radius - 15, 15, -this.radius - 20);
@@ -257,7 +269,6 @@
                     ctx.strokeStyle = '#d97706';
                     ctx.stroke();
 
-                    // ประกายไฟชนวน
                     ctx.beginPath();
                     ctx.arc(15, -this.radius - 20, 6, 0, Math.PI * 2);
                     ctx.fillStyle = '#f59e0b';
@@ -269,10 +280,8 @@
                     ctx.textBaseline = 'middle';
                     ctx.fillText('💣', 0, 2);
                 } else {
-                    // วาดรูปทรงผลไม้
                     const ft = this.fruitType;
 
-                    // เปลือกนอกผลไม้
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                     ctx.fillStyle = ft.bg;
@@ -281,26 +290,22 @@
                     ctx.strokeStyle = ft.border;
                     ctx.stroke();
 
-                    // เนื้อในผลไม้ (Inner Circle)
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius * 0.84, 0, Math.PI * 2);
                     ctx.fillStyle = ft.inner;
                     ctx.fill();
 
-                    // ใบไม้ติดขั้วผลไม้
                     ctx.beginPath();
                     ctx.ellipse(0, -this.radius * 0.9, this.radius * 0.3, this.radius * 0.15, Math.PI / 4, 0, Math.PI * 2);
                     ctx.fillStyle = '#22c55e';
                     ctx.fill();
 
-                    // วาดพินอิน (Pinyin) ไว้ด้านบนอักษรจีน
                     ctx.fillStyle = '#334155';
                     ctx.font = `bold ${this.radius * 0.28}px sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(this.wordObj.pinyin, 0, -this.radius * 0.32);
 
-                    // วาดตัวอักษรภาษาจีนด้านในผลไม้
                     ctx.fillStyle = '#0f172a';
                     ctx.font = `bold ${this.radius * 0.55}px "PingFang SC", "Microsoft YaHei", sans-serif`;
                     ctx.textAlign = 'center';
@@ -400,7 +405,7 @@
             }
         }
 
-        // --- 7. วาดฉากหลังโรงฝึกนินจาไม้โบราณ (Dojo Background) ---
+        // --- 7. วาดฉากหลังโรงฝึกนินจาไม้โบราณ ---
         function drawBackground() {
             const grad = ctx.createLinearGradient(0, 0, 0, height);
             grad.addColorStop(0, '#29180e');
@@ -446,12 +451,10 @@
                     item.isSliced = true;
 
                     if (item.isBomb) {
-                        // ฟันโดนระเบิด: หัก 1 ชีวิต
                         createParticles(item.x, item.y, '#ef4444');
                         soundFX.playBomb();
                         loseLife("คุณฟันโดนระเบิด! 💣");
                     } else {
-                        // สภาพการตัดผลไม้เป็น 2 ซีก
                         const angle = Math.atan2(y2 - y1, x2 - x1);
                         fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, true, angle));
                         fruitHalves.push(new FruitHalf(item.x, item.y, item.radius, item.fruitType, false, angle));
@@ -459,7 +462,6 @@
                         createParticles(item.x, item.y, item.fruitType.pColor);
 
                         if (item.wordObj.cn === currentTarget.cn) {
-                            // ฟันถูกคำ!
                             soundFX.playHit();
                             score += 10;
                             document.getElementById('score-val').innerText = score;
@@ -469,7 +471,6 @@
                                 spawnInterval -= 7;
                             }
                         } else {
-                            // ฟันผิดคำ!
                             soundFX.playWrong();
                             loseLife("ฟันผิดคำศัพท์! ❌");
                         }
@@ -494,12 +495,28 @@
             }
         }
 
+        // ระบบหักชีวิตพร้อมระบบ Cooldown ป้องกันการโดนหักซ้ำซ้อน
         function loseLife(reason = "ชีวิตของคุณหมดลงแล้ว! 💔") {
+            const now = Date.now();
+            if (now - lastDamageTime < DAMAGE_COOLDOWN) {
+                return; // ถ้ายังไม่พ้น Cooldown ให้ข้ามการหักชีวิต
+            }
+            lastDamageTime = now;
+
             lives--;
             updateLivesUI();
+            triggerDamageFlash();
+
             if (lives <= 0) {
                 gameOver(reason);
             }
+        }
+
+        function triggerDamageFlash() {
+            const flash = document.getElementById('damage-flash');
+            flash.classList.remove('damage-overlay');
+            void flash.offsetWidth; // Trigger reflow
+            flash.classList.add('damage-overlay');
         }
 
         function updateLivesUI() {
@@ -652,6 +669,7 @@
             lives = 5;
             spawnInterval = 85;
             isGameOver = false;
+            lastDamageTime = 0;
             items = [];
             fruitHalves = [];
             particles = [];
